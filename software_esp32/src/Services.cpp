@@ -121,6 +121,15 @@ void CServices::checkDS18()
       if (!tempStates[tempIdx].tempFailed) {
         tempStates[tempIdx].messengerSent= false;
         tempStates[tempIdx].timeOut=0;
+        // sensor is back, release the pi control of the valve which uses it as value source
+        valveIdx=StmApp.findTempIdxInValve (tempIdx);
+        if ((valveIdx>=0) && (valveIdx<ACTUATOR_COUNT)) {
+          if (((StmApp.actuators[valveIdx].tIdx1 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==1)) ||
+            ((StmApp.actuators[valveIdx].tIdx2 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==2)))
+          {
+            PiControl[valveIdx].failed=false;
+          }
+        }
       }
     }
   }

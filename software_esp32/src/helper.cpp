@@ -38,6 +38,7 @@
 *END************************************************************************/
 
 
+#include <cmath>
 #include "helper.h"
 #include "VdmSystem.h"
 
@@ -62,6 +63,7 @@ String ConvBinUnits(size_t bytes, byte resolution)
 
 bool isNumber(const String& str)
 {
+    if (str.length()==0) return false;
     for (char const &c : str) {
         if (std::isdigit(c) == 0) return false;
     }
@@ -75,8 +77,9 @@ bool isFloat(const std::string& str)
         return false;
 
     char* ptr;
-    strtof(str.c_str(), &ptr);
-    return (*ptr) == '\0';
+    float f = strtof(str.c_str(), &ptr);
+    // "nan" and "inf" are parsed by strtof, but are no usable values
+    return ((*ptr) == '\0') && std::isfinite(f);
 }
 
 

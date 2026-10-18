@@ -40,6 +40,7 @@
 
 #include "PIControl.h"
 #include "time.h"
+#include <cmath>
 #include "globals.h"
 #include "stmApp.h"
 #include "VdmConfig.h"
@@ -51,6 +52,7 @@
 CPiControl PiControl[ACTUATOR_COUNT];
 
 void CPiControl::savePiControl() {
+  if (!isStarted()) return;
   piControlRtcs.piControlRtc[valveIndex].target=target;
   piControlRtcs.piControlRtc[valveIndex].value=value;
   piControlRtcs.piControlRtc[valveIndex].iProp=iProp;
@@ -60,6 +62,7 @@ void CPiControl::savePiControl() {
 }
 
 void CPiControl::reloadPiControl() {
+  if (!isStarted()) return;
   if (strncmp(piControlRtcs.piControlRtc[valveIndex].pattern,RTC_RAM_PATTERN,sizeof(RTC_RAM_PATTERN))==0) {
     target=piControlRtcs.piControlRtc[valveIndex].target;
     value=piControlRtcs.piControlRtc[valveIndex].value;
@@ -109,8 +112,11 @@ float CPiControl::piCtrl(float target,float value) {
   old_esum=esum;
 
   time(&now);
-  ta=difftime(now,ts);      // in sec
+  double elapsed=difftime(now,ts);      // in sec
   time(&ts);
+  // the clock jumps when sntp syncs after the start, use the configured sample time then
+  uint16_t sampleTime=VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].ts;
+  if ((elapsed<0) || (elapsed>2.0*sampleTime)) ta=sampleTime; else ta=elapsed;
  
   dt =  ((double)ta / (double)ti);
 
@@ -175,6 +181,7 @@ float CPiControl::piCtrl(float target,float value) {
 
 void CPiControl::setWindowAction(uint8_t windowControl)
 {
+ if (!isStarted()) return;
  if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].controlFlags.windowInstalled && controlActive && 
     (VdmConfig.heatValues.heatControl==1 || VdmConfig.heatValues.heatControl==2))
  {
@@ -200,6 +207,7 @@ void CPiControl::setWindowAction(uint8_t windowControl)
 }
 
 void CPiControl::setValveAction(uint8_t valvePosition) {
+  if (!isStarted()) return;
   if (!(failed) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].controlFlags.active && controlActive)) {
     StmApp.actuators[valveIndex].target_position=valvePosition;
     if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_ATOMIC) {
@@ -222,6 +230,7 @@ void CPiControl::setValveAction(uint8_t valvePosition) {
 
 CHECKACTION CPiControl::checkAction(uint8_t idx)
 {
+  if (!isStarted()) return(nothing);
   if (!controlActive) return(nothing);
   if (!VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].controlFlags.active)  return(nothing);
   if (failed) return(nothing);
@@ -289,6 +298,7 @@ void CPiControl::controlValve()
 
 void CPiControl::setPosition(uint8_t thisPosition)
 {
+  if (!isStarted()) return;
   StmApp.actuators[valveIndex].target_position=thisPosition;
      // check if there are links
      for (uint8_t i=0; i< ACTUATOR_COUNT; i++) {
@@ -305,6 +315,7 @@ void CPiControl::setPosition(uint8_t thisPosition)
   
 bool CPiControl::getValueFromSource()
 {
+  if (!isStarted()) return (false);
   if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].valueSource==1) {
       if (StmApp.actuators[valveIndex].temp1>-500) 
         value=((float)StmApp.actuators[valveIndex].temp1)/10;
@@ -322,6 +333,7 @@ void CPiControl::doControlValve()
 {
     uint8_t valvePosition;
     if (!getValueFromSource()) return;
+    if (!std::isfinite(target) || !std::isfinite(value)) return;
     // deadband
     if (VdmConfig.configFlash.valvesControl1Config.valveControl1Config[valveIndex].deadband>0) {
       if (abs(target-value)<VdmConfig.configFlash.valvesControl1Config.valveControl1Config[valveIndex].deadband) return;
@@ -345,6 +357,7 @@ void CPiControl::doControlValve()
 void CPiControl::setControlActive(uint8_t thisControl)
 {
   controlActive=thisControl;
+  if (!isStarted()) return;
   // check if there are links
    for (uint8_t i=0; i< ACTUATOR_COUNT; i++) {
     if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[i].controlFlags.active) {
@@ -358,6 +371,7 @@ void CPiControl::setControlActive(uint8_t thisControl)
 void CPiControl::setFailed(uint8_t thisPosition)
 {
   failed=true;
+  if (!isStarted()) return;
   StmApp.actuators[valveIndex].target_position=thisPosition;
   // check if there are links
   for (uint8_t i=0; i< ACTUATOR_COUNT; i++) {

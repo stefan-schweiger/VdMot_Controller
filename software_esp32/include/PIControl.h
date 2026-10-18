@@ -121,6 +121,8 @@ public:
 private:
   void doControlValve(); 
   CHECKACTION checkAction(uint8_t idx);
+  // valveIndex is set when the pi services are started, until then it is 255
+  bool isStarted() { return (valveIndex<ACTUATOR_COUNT); }
   
   double iProp;
   time_t ts;

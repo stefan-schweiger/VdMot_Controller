@@ -454,7 +454,7 @@ bool CMqtt::checkTopicPath(char* topic,char* ref)
 
 void CMqtt::callback(char* topic, byte* payload, unsigned int length) 
 {
-    bool found;
+    bool found = false;
     char item[50];
     char* pt;
     char* pRef;
@@ -522,18 +522,19 @@ void CMqtt::callback(char* topic, byte* payload, unsigned int length)
                 if (pRef[0]=='/') pRef++;
                 pt+=strlen(pRef);
                 idx=0;
-                for (i=strlen(mqtt_valvesTopic);i<strlen(topic);i++) {
-                    if (*pt=='/') break;
-                    item[idx]=*pt;
-                    idx++;
+                while ((*pt!='\0') && (*pt!='/')) {
+                    if (idx<sizeof(item)-1) {
+                        item[idx]=*pt;
+                        idx++;
+                    }
                     pt++;
-                } 
+                }
                 
                 // find approbiated valve
                 idx=0;
                 found = false;
                 for (i=0;i<ACTUATOR_COUNT;i++) {
-                    strncpy(rbName,VdmConfig.configFlash.valvesConfig.valveConfig[i].name,sizeof(VdmConfig.configFlash.valvesConfig.valveConfig[i].name));
+                    strlcpy(rbName,VdmConfig.configFlash.valvesConfig.valveConfig[i].name,sizeof(rbName));
                     replace (rbName,strlen(rbName),' ','_');
                     if (strncmp(rbName,item,sizeof(rbName))==0) {
                         found = true;
@@ -542,9 +543,13 @@ void CMqtt::callback(char* topic, byte* payload, unsigned int length)
                     idx++;    
                 }
                 if (!found) {
+                    // valve number 1..ACTUATOR_COUNT
                     if (isNumber(item)) {
-                        idx=atoi(item)-1;
-                        found=true;
+                        int no=atoi(item);
+                        if ((no>=1) && (no<=ACTUATOR_COUNT)) {
+                            idx=no-1;
+                            found=true;
+                        }
                     }
                 }
 
@@ -553,7 +558,7 @@ void CMqtt::callback(char* topic, byte* payload, unsigned int length)
                     if (isFloat(value)) {
                         if (checkTopicName(pt,(char*) "/target")) {
                             if (VdmConfig.configFlash.valvesConfig.valveConfig[idx].active) {
-                                StmApp.actuators[idx].target_position = atoi(value);
+                                StmApp.actuators[idx].target_position = constrain(atoi(value),0,100);
                             }
                         } else if (checkTopicName(pt,(char*) "/tValue")) {
                             if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.active) {
@@ -704,7 +709,7 @@ void CMqtt::publish_valves () {
                     if ((VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].link>0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].link<13)) {
                         topicstr[len] = '\0';
                         strlcat(topicstr, "/control/link",sizeof(topicstr));
-                        strcpy(valstr,VdmConfig.configFlash.valvesConfig.valveConfig[VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].link-1].name);
+                        strlcpy(valstr,VdmConfig.configFlash.valvesConfig.valveConfig[VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].link-1].name,sizeof(valstr));
                         publishValue(topicstr, valstr, sizeof(topicstr));
                     }
                     lastValveValues[x].state=valveStates[x].thisState;
@@ -809,7 +814,7 @@ void CMqtt::publish_valves () {
                                 s = String(((float)StmApp.actuators[x].temp1)/10,1); 
                                 if (VdmConfig.configFlash.protConfig.mqttConfig.flags.numFormat==numFormatGer) s.replace('.',',');
                             } else s="failed";
-                            publishValue(topicstr, (char*) &s, sizeof(topicstr));
+                            publishValue(topicstr, (char*) s.c_str(), sizeof(topicstr));
                             lastValveValues[x].temp1=StmApp.actuators[x].temp1;
                         }
                     }
@@ -822,7 +827,7 @@ void CMqtt::publish_valves () {
                                 s = String(((float)StmApp.actuators[x].temp2)/10,1); 
                                 if (VdmConfig.configFlash.protConfig.mqttConfig.flags.numFormat==numFormatGer) s.replace('.',',');
                             } else s="failed";
-                            publishValue(topicstr, (char*) &s, sizeof(topicstr));
+                            publishValue(topicstr, (char*) s.c_str(), sizeof(topicstr));
                             lastValveValues[x].temp2=StmApp.actuators[x].temp2;
                         }
                     }
@@ -874,7 +879,7 @@ void CMqtt::publish_temps()
                                 s = String(((float)StmApp.temps[x].temperature)/10,1); 
                                 if (VdmConfig.configFlash.protConfig.mqttConfig.flags.numFormat==numFormatGer) s.replace('.',','); 
                             }
-                            publishValue(topicstr, (char*) &s, sizeof(topicstr));
+                            publishValue(topicstr, (char*) s.c_str(), sizeof(topicstr));
                         }
                     }
                 }
@@ -920,7 +925,7 @@ void CMqtt::publish_volts()
                     else
                     s = String(StmApp.volts[voltIdx].value,3); 
                     if (VdmConfig.configFlash.protConfig.mqttConfig.flags.numFormat==numFormatGer) s.replace('.',',');    
-                    publishValue(topicstr, (char*) &s, sizeof(topicstr));
+                    publishValue(topicstr, (char*) s.c_str(), sizeof(topicstr));
                     // unit
                     topicstr[len] = '\0';
                     strlcat(topicstr, "/unit",sizeof(topicstr)); 
@@ -1024,7 +1029,9 @@ void CMqtt::checktValueTimeOut ()
     if (VdmConfig.configFlash.protConfig.mqttConfig.flags.timeoutTSActive) 
     {
         for (uint8_t x = 0;x<ACTUATOR_COUNT;x++) {
-            if ((!PiControl[x].windowState) && (!valveStates[x].tValueFailed) && VdmConfig.configFlash.valvesConfig.valveConfig[x].active && VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].controlFlags.active && PiControl[x].controlActive) 
+            // only valves which get their temperature value via mqtt (tValue) can time out, linked valves follow their master
+            bool tValueFromMqtt = (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].valueSource==0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].link==0);
+            if (tValueFromMqtt && (!PiControl[x].windowState) && (!valveStates[x].tValueFailed) && VdmConfig.configFlash.valvesConfig.valveConfig[x].active && VdmConfig.configFlash.valvesControlConfig.valveControlConfig[x].controlFlags.active && PiControl[x].controlActive)
             {
                 if ((millis()-lastValveValues[x].lasttValuets)>(1000*60*VdmConfig.configFlash.protConfig.mqttConfig.timeOut)) {
                     PiControl[x].setFailed(VdmConfig.configFlash.protConfig.mqttConfig.toPos);
