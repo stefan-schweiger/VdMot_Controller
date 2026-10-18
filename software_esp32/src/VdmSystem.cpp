@@ -196,7 +196,7 @@ void CVdmSystem::getFSDirectory()
       #endif
       file = root.openNextFile();
       numfiles++;
-      if (numfiles>maxFiles) break;
+      if (numfiles>=maxFiles) break;
     }
     root.close();
   }
@@ -245,7 +245,8 @@ void CVdmSystem::openFile (String fName,char mode)
   if (!spiffsStarted) SPIFFS.begin(true);
   spiffsStarted=true;
   if ((mode==FS_WRITE_MODE) && SPIFFS.exists(fName)) SPIFFS.remove(fName); 
-  fsfile = SPIFFS.open(fName,(const char*) &mode,(mode==FS_WRITE_MODE));
+  const char modeStr[2] = {mode, '\0'};    // open expects a zero terminated mode string
+  fsfile = SPIFFS.open(fName,modeStr,(mode==FS_WRITE_MODE));
   fsfile.seek(0);
 }
 
