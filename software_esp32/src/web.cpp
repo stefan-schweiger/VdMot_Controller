@@ -208,7 +208,8 @@ String CWeb::getValvesControlConfig (VDM_VALVES_CONTROL_CONFIG valvesControlConf
               "\"ki\":"+String(valvesControlConfig.valveControlConfig[x].ki) + ","+
               "\"scheme\":"+String(valvesControlConfig.valveControlConfig[x].scheme) + ","+
               "\"startAZ\":"+String(valvesControlConfig.valveControlConfig[x].startActiveZone) + ","+
-              "\"endAZ\":"+String(valvesControlConfig.valveControlConfig[x].endActiveZone) + "}";
+              "\"endAZ\":"+String(valvesControlConfig.valveControlConfig[x].endActiveZone) + ","+
+              "\"minOpen\":"+String(VdmConfig.configFlash.valvesControl2Config.minOpening[x]) + "}";
 
     if (x<ACTUATOR_COUNT-1) result += ",";
   }  

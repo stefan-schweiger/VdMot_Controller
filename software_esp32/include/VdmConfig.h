@@ -183,6 +183,11 @@ typedef struct {
   VDM_VALVE_CONTROL_INIT valveControlInit[ACTUATOR_COUNT];
 } VDM_VALVES_CONTROL_INIT;
 
+// stored with its own nvs key, so the layout of the other valve control blobs stays unchanged
+typedef struct {
+  uint8_t minOpening[ACTUATOR_COUNT];     // minimum opening of the valve in %, smaller openings are avoided, 0 = off
+} VDM_VALVES_CONTROL2_CONFIG;
+
 
 typedef struct {
   char name[11];
@@ -271,6 +276,7 @@ typedef struct
   VDM_MSG_CONFIG messengerConfig;
   VDM_VALVES_CONTROL_INIT valvesControlInit;
   VDM_VALVES_CONTROL1_CONFIG valvesControl1Config;
+  VDM_VALVES_CONTROL2_CONFIG valvesControl2Config;
 } CONFIG_FLASH;
 
 typedef struct {
@@ -324,6 +330,7 @@ typedef struct {
 #define nvsValves                   "valves"
 #define nvsValvesControl            "valvesCtrl"
 #define nvsValvesControl1           "valvesCtrl1"
+#define nvsValvesControl2           "valvesCtrl2"
 #define nvsValvesControlHeatControl "vCtrlHeat"
 #define nvsValvesControlParkPos     "vCtrlParkPos"
 #define nvsValvesControlInit        "vCtrlInit"

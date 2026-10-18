@@ -172,11 +172,29 @@ int16_t CStmApp::getTOffset(uint8_t tIdx)
     return (result); 
 }
 
+// target position that is sent to the STM32
+// some valves make flow noise when they are opened only a little, with a minimum opening m
+// targets between 1 and m-1 are sent as 0 or m: an open valve stays at m until the target drops
+// below m/2, a closed valve stays closed until the target reaches m
+uint8_t CStmApp::effectiveTarget(uint8_t x)
+{
+    uint8_t target = actuators[x].target_position;
+    if (target>100) target=100;      // the STM32 ignores targets above 100 % without answer
+    uint8_t minOpening = VdmConfig.configFlash.valvesControl2Config.minOpening[x];
+    if ((minOpening==0) || (target==0) || (target>=minOpening)) return (target);
+
+    uint8_t closeBelow = (minOpening+1)/2;
+    uint8_t lastSent = target_position_mirror[x];
+    bool isOpen = (lastSent<=100) ? (lastSent>0) : (target>=closeBelow);     // unknown after STM32 reset
+    if (isOpen && (target>=closeBelow)) return (minOpening);
+    return (0);
+}
+
 bool CStmApp::checkNewTarget() {
     for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
         if (VdmConfig.configFlash.valvesConfig.valveConfig[i].active) {
             // check if target has changed
-            if(target_position_mirror[i] != actuators[i].target_position) return (true);
+            if(target_position_mirror[i] != effectiveTarget(i)) return (true);
         }
     }
     return (false);
@@ -1045,21 +1063,20 @@ void  CStmApp::app_comm_machine()
                 for (uint8_t x=0; x<ACTUATOR_COUNT; x++) {
                     if (VdmConfig.configFlash.valvesConfig.valveConfig[x].active) {
                         // check if target has changed
-                        if(target_position_mirror[x] != actuators[x].target_position)
+                        uint8_t target = effectiveTarget(x);
+                        if(target_position_mirror[x] != target)
                         {
-                            // the STM32 ignores targets above 100 % without answer
-                            if (actuators[x].target_position>100) actuators[x].target_position=100;
                             // mirror is updated with the answer of the STM32, otherwise the target is sent again
                             pendingTargetValve = x;
-                            pendingTargetValue = actuators[x].target_position;
+                            pendingTargetValue = target;
                             if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
-                                syslog.log(LOG_DEBUG, "STMApp:valve position has changed : "+String(VdmConfig.configFlash.valvesConfig.valveConfig[x].name)+"(#"+String(x+1)+") = "+String(actuators[x].target_position));
+                                syslog.log(LOG_DEBUG, "STMApp:valve position has changed : "+String(VdmConfig.configFlash.valvesConfig.valveConfig[x].name)+"(#"+String(x+1)+") = "+String(actuators[x].target_position)+", sent "+String(target));
                             }
                             settarget_check=false;
                            
-                            app_comm_send(APP_PRE_SETTARGETPOS,&x, &(actuators[x].target_position));
+                            app_comm_send(APP_PRE_SETTARGETPOS,&x, &pendingTargetValue);
                             #ifdef EnvDevelop
-                                UART_DBG.println("valve position has changed : "+String(x)+" = "+String(actuators[x].target_position));
+                                UART_DBG.println("valve position has changed : "+String(x)+" = "+String(pendingTargetValue));
                             #endif
                             // break loop, next valve will be served in next cycle
                             appState=APP_PENDING;

@@ -148,6 +148,7 @@ void CVdmConfig::clearConfig()
     configFlash.valvesControlConfig.valveControlConfig[i].endActiveZone=100;
     configFlash.valvesControlInit.valveControlInit[i].tTarget=20;
     configFlash.valvesControl1Config.valveControl1Config[i].deadband=0.0;
+    configFlash.valvesControl2Config.minOpening[i]=0;
   }
   configFlash.valvesControlConfig.heatControl=0;
   configFlash.valvesControlConfig.parkingPosition=10;
@@ -277,6 +278,9 @@ void CVdmConfig::readConfig()
     }
     if (prefs.isKey(nvsValvesControlInit)) {
       prefs.getBytes(nvsValvesControlInit, (void *) configFlash.valvesControlInit.valveControlInit, sizeof(configFlash.valvesControlInit.valveControlInit));
+    }
+    if (prefs.isKey(nvsValvesControl2)) {
+      prefs.getBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
     }
     prefs.end();
   }
@@ -451,6 +455,7 @@ void CVdmConfig::writeValvesControlConfig(bool reboot, bool restartTask)
   prefs.putBytes(nvsValvesControl, (void *) configFlash.valvesControlConfig.valveControlConfig, sizeof(configFlash.valvesControlConfig.valveControlConfig));
   prefs.putBytes(nvsValvesControl1, (void *) configFlash.valvesControl1Config.valveControl1Config, sizeof(configFlash.valvesControl1Config.valveControl1Config));
   prefs.putBytes(nvsValvesControlInit, (void *) configFlash.valvesControlInit.valveControlInit, sizeof(configFlash.valvesControlInit.valveControlInit));
+  prefs.putBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
   prefs.putUChar (nvsValvesControlHeatControl,configFlash.valvesControlConfig.heatControl);
   prefs.putUChar (nvsValvesControlParkPos,configFlash.valvesControlConfig.parkingPosition);
   prefs.end();
@@ -656,6 +661,10 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           if (!doc["valves"][i]["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].endActiveZone=doc["valves"][i]["endAZ"];  
           if (!doc["valves"][i]["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[idx].tTarget=doc["valves"][i]["inittTarget"];  
           if (!doc["valves"][i]["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[idx].deadband=doc["valves"][i]["deadband"];
+          if (!doc["valves"][i]["minOpen"].isNull()) {
+            int minOpen=doc["valves"][i]["minOpen"];
+            if ((minOpen>=0) && (minOpen<=100)) configFlash.valvesControl2Config.minOpening[idx]=minOpen;
+          }
         }
       }
     } 

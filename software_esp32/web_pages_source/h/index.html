@@ -2619,7 +2619,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 			const valvesControlTable = id('cfgValvesControlTable');	 
 			for (let row=0; row<13; row++) { 
 				const thisRow = valvesControlTable.insertRow(0);
-				for (let i = 0; i < 16; i++) {
+				for (let i = 0; i < 17; i++) {
 					cell = thisRow.insertCell();
 				}
 			}
@@ -2822,6 +2822,18 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('onchange','setCfgVCWindow(this);');
 				el.setAttribute('title','Activate window handling');
 				thiscell.appendChild(el);
+
+				thiscell = valvesControlTable.rows[row].cells[16];
+				el = document.createElement('input');
+				el.className = "alignTabCellCenter";
+				el.setAttribute('type', 'number');
+				el.setAttribute('name', 'cfgVCMinOpen' + row);
+				el.setAttribute('id', 'cfgVCMinOpen' + row);
+				el.setAttribute('style','width:50px;');
+				el.setAttribute('min','0');
+				el.setAttribute('max','100');
+				el.setAttribute('title','Minimum opening of the valve (%), smaller openings are not used to avoid flow noise. 0 = off');
+				thiscell.appendChild(el);
 			}
 			let col=0;
 			valvesControlTable.rows[0].cells[col++].textContent = 'No';
@@ -2853,6 +2865,8 @@ Publish on change on server side is not recommended with this option">tValue aft
 			valvesControlTable.rows[0].cells[col++].title = 'Active zone of the valve (0-100 %)';
 			valvesControlTable.rows[0].cells[col].textContent = 'Window';
 			valvesControlTable.rows[0].cells[col++].title = 'Activate window handling';
+			valvesControlTable.rows[0].cells[col].textContent = 'Min. open(%)';
+			valvesControlTable.rows[0].cells[col++].title = 'Minimum opening of the valve (%), smaller openings are not used to avoid flow noise. 0 = off';
 		}
 		
 		function showBrokerIP() {
@@ -3528,7 +3542,9 @@ Publish on change on server side is not recommended with this option">tValue aft
 			//await postChunkValvesControlCfg(4,6);
 			//await postChunkValvesControlCfg(7,9);
 			//await postChunkValvesControlCfg(10,12);
-			await postChunkValvesControlCfg(1,12);
+			// two chunks, all 12 valves in one post come close to the json buffer size of the server
+			await postChunkValvesControlCfg(1,6);
+			await postChunkValvesControlCfg(7,12);
 		}
 		
 		async function postChunkValvesControlCfg(chunkStart,chunkEnd) {
@@ -3553,6 +3569,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				valveValues.ki = id('cfgVCKi'+row).value;
 				valveValues.startAZ = id('cfgVCSZ'+row).value;
 				valveValues.endAZ = id('cfgVCEZ'+row).value;
+				valveValues.minOpen = id('cfgVCMinOpen'+row).value;
 				valvesItemsCfg.push(valveValues);
 			}
 			let valvesControlCfg={};
@@ -3931,6 +3948,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				id('cfgVCKi'+row).value= cfgValvesControlJson.valves[row-1].ki;
 				id('cfgVCSZ'+row).value= cfgValvesControlJson.valves[row-1].startAZ;
 				id('cfgVCEZ'+row).value= cfgValvesControlJson.valves[row-1].endAZ;
+				id('cfgVCMinOpen'+row).value= cfgValvesControlJson.valves[row-1].minOpen;
 				setCfgVCLink(id('cfgVCLink-'+row));
 				if (cfgValvesControlJson.valves[row-1].active==1) anyValveControlEnabled=true;
 			}

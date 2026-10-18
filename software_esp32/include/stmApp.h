@@ -215,6 +215,7 @@ private:
   int16_t ConvertCF(int16_t cValue);
   int16_t getTOffset(uint8_t tIdx);
   bool checkNewTarget();
+  uint8_t effectiveTarget(uint8_t x);
 
   bool fastQueueMode;
 
