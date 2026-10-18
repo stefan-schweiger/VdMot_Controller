@@ -220,6 +220,9 @@ private:
 
   bool settarget_check;
   uint8_t target_position_mirror[ACTUATOR_COUNT];
+  // target sent to the STM32, the mirror is updated when the STM32 acknowledges it
+  uint8_t pendingTargetValve;
+  uint8_t pendingTargetValue;
   uint8_t getindex;
 
   uint8_t timeout;

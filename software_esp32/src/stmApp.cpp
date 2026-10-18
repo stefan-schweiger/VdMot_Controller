@@ -74,6 +74,7 @@ CStmApp StmApp;
 CStmApp::CStmApp() 
 {
     settarget_check =false;
+    pendingTargetValve=255;
     tempIndex=0;
     checkTempsCount = 0;
     checkVoltsCount = 0;
@@ -165,7 +166,7 @@ int16_t CStmApp::ConvertCF(int16_t cValue)
 int16_t CStmApp::getTOffset(uint8_t tIdx)
 {
     int16_t result = 0;
-    if (tIdx>0) {
+    if ((tIdx>0) && (tIdx<=TEMP_SENSORS_COUNT)) {
         result = VdmConfig.configFlash.tempsConfig.tempConfig[tIdx-1].offset;
     } 
     return (result); 
@@ -260,12 +261,12 @@ void CStmApp::setTempIdx()
         tIdx2=StmApp.actuators[i].tIdx2;
         s1=APP_PRE_UNDEFSENSOR;
         s2=APP_PRE_UNDEFSENSOR;
-        if (tIdx1>0) {
+        if ((tIdx1>0) && (tIdx1<=TEMP_SENSORS_COUNT)) {
             if (strlen(VdmConfig.configFlash.tempsConfig.tempConfig[tIdx1-1].ID)>0) {
                 s1=VdmConfig.configFlash.tempsConfig.tempConfig[tIdx1-1].ID;
             }   
         }
-        if (tIdx2>0) {
+        if ((tIdx2>0) && (tIdx2<=TEMP_SENSORS_COUNT)) {
             if (strlen(VdmConfig.configFlash.tempsConfig.tempConfig[tIdx2-1].ID)>0) {
                 s2=VdmConfig.configFlash.tempsConfig.tempConfig[tIdx2-1].ID; 
             }
@@ -325,7 +326,7 @@ bool CStmApp::checkCmdIsAvailable (String thisCmd)
 {   
     uint8_t i=0;
     while (commCmds[i] != NULL) {
-        if (memcmp((const char*) &thisCmd,commCmds[i],5)==0) {
+        if (strncmp(thisCmd.c_str(),commCmds[i],5)==0) {
             return(true);
         }
         i++;
@@ -419,11 +420,17 @@ void  CStmApp::app_check_data()
 
         for (int c = 0; c < availcnt; c++)
         {           
-            *bufptr++ = (char) UART_STM32.read();
-            buflen++;  
+            char ch = (char) UART_STM32.read();
+            // skip line end characters of the previous line (\n of \r\n)
+            if ((buflen==0) && ((ch=='\n') || (ch=='\r'))) continue;
+            // drop data that does not fit, the line end below terminates the overlong line
+            if (buflen<sizeof(buffer)-1) {
+                *bufptr++ = ch;
+                buflen++;  
+            }
         }
         if (buflen>=sizeof(buffer)-1) {
-            *bufptr='\r';
+            buffer[buflen-1]='\r';
         }        
     }  
 
@@ -438,7 +445,7 @@ void  CStmApp::app_check_data()
                 found = true;
                 buflen = 0;         // reset counter
                 bufptr = buffer;    // reset ptr    
-                UART_STM32.read();  // read possible \n
+                break;
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_ATOMIC) {
                     syslog.log(LOG_DEBUG, "STMApp:found new data packet: >" + String(buffer) + "<");
                 }
@@ -466,6 +473,7 @@ void  CStmApp::app_check_data()
 
         if (stmStatus==STM_NOT_READY) stmStatus=STM_READY;
         stmFailed=false;
+        appTimeOuts=0;      // only consecutive timeouts reset the STM32
         // devide buffer into command and data
 		// ****************************************
 
@@ -476,7 +484,8 @@ void  CStmApp::app_check_data()
 
         // Returns first token
         char *token = strtok(cmdptr, " ");
-        strncpy(cmd,token,sizeof(cmd)-1);		// command
+        memset(cmd,0x0,sizeof(cmd));
+        if (token != NULL) strncpy(cmd,token,sizeof(cmd)-1);		// command
         // Keep get tokens while one of the
         // delimiters present in buffer.
         //UART_DBG.println("token1 "+String(token));
@@ -500,7 +509,8 @@ void  CStmApp::app_check_data()
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
                     syslog.log(LOG_DEBUG,"STMApp:actual position answer "+String(argptr[0])+" : "+String(argptr[1]));
                 }
-                actuators[atoi(argptr[0])].actual_position = atoi(argptr[1]);
+                uint8_t idx=atoi(argptr[0]);
+                if (idx < ACTUATOR_COUNT) actuators[idx].actual_position = atoi(argptr[1]);
             }
             appState=APP_IDLE;
         }
@@ -512,7 +522,8 @@ void  CStmApp::app_check_data()
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
                     syslog.log(LOG_DEBUG,"STMApp:mean current answer "+String(argptr[0])+" : "+String(argptr[1]));  
                 }
-                actuators[atoi(argptr[0])].meancurrent = atoi(argptr[1]);
+                uint8_t idx=atoi(argptr[0]);
+                if (idx < ACTUATOR_COUNT) actuators[idx].meancurrent = atoi(argptr[1]);
             }
             appState=APP_IDLE;
         }
@@ -525,6 +536,7 @@ void  CStmApp::app_check_data()
                     syslog.log(LOG_DEBUG,"STMApp:valve status "+String(argptr[1]));
                 }
                 uint8_t nActuators = atoi(argptr[0]);
+                if (nActuators > ACTUATOR_COUNT) nActuators = ACTUATOR_COUNT;
                 char* cmdptr;
                 char* ps=argptr[1];
                 for (uint8_t idx=0; idx<nActuators;idx++) {
@@ -532,8 +544,8 @@ void  CStmApp::app_check_data()
                     val8 = atoi(ps);
                     actuators[idx].state = (val8 & 0x7f);
                     actuators[idx].calibration =  (val8>=0x80);
-                    if (cmdptr!=NULL) ps=cmdptr+1;
-                    idx++;
+                    if (cmdptr==NULL) break;
+                    ps=cmdptr+1;
                 }  
                 stmStatus=STM_READ_ALL_FROM_QUEUE;  
                 if (stmInitState==STM_INIT_STARTED) stmInitState=STM_INIT_FINISHED ;
@@ -546,15 +558,20 @@ void  CStmApp::app_check_data()
 		else if(memcmp(APP_PRE_SETTARGETPOS,cmd,5) == 0) {
             if(argcnt == 0) {
                 settarget_check = true; 
+                if (pendingTargetValve<ACTUATOR_COUNT) {
+                    target_position_mirror[pendingTargetValve] = pendingTargetValue;
+                    pendingTargetValve=255;
+                }
             }
-            if (memcmp(cmd,(const void*) &cmd_buffer,5) ==0) cmd_buffer="";
+            if (strncmp(cmd,cmd_buffer.c_str(),5) ==0) cmd_buffer="";
             appState=APP_IDLE;
         }
         // get target position
             // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             else if(memcmp(APP_PRE_GETTARGETPOS,cmd,5) == 0) {
                 if(argcnt == 2) {
-                    actuators[atoi(argptr[0])].target_position = atoi(argptr[1]);
+                    uint8_t idx=atoi(argptr[0]);
+                    if (idx < ACTUATOR_COUNT) actuators[idx].target_position = atoi(argptr[1]);
                 }
                 appState=APP_IDLE;
             }
@@ -637,6 +654,7 @@ void  CStmApp::app_check_data()
         else if(memcmp(APP_PRE_GETONEWIRECNT,cmd,5) == 0) {
             if(argcnt == 1) {
                 tempsPrivCount= atoi(argptr[0]); 
+                if (tempsPrivCount > TEMP_SENSORS_COUNT) tempsPrivCount = TEMP_SENSORS_COUNT;
                 if (tempsPrivCount!=tempsCount) app_cmd(APP_PRE_GETONEWIRECNT,String(255));
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
                     syslog.log(LOG_DEBUG,"STMApp:one wire temp count "+String(tempsPrivCount));
@@ -647,14 +665,15 @@ void  CStmApp::app_check_data()
                     syslog.log(LOG_DEBUG,"STMApp:one wire temp data "+String(argptr[1]));
                 } 
                 tempsPrivCount= atoi(argptr[0]);
+                if (tempsPrivCount > TEMP_SENSORS_COUNT) tempsPrivCount = TEMP_SENSORS_COUNT;
                 if (tempsPrivCount>0) {
                     char* cmdptr;
                     char* ps=argptr[1];
                     for (uint8_t idx=0; idx<tempsPrivCount;idx++) {
                         if ((cmdptr=strchr(ps,','))!=NULL) *cmdptr='\0';
-                        strncpy(tempsId[idx].id,ps,sizeof(tempsId[idx].id));
+                        strlcpy(tempsId[idx].id,ps,sizeof(tempsId[idx].id));
+                        if (cmdptr==NULL) break;
                         ps=cmdptr+1;
-                        idx++;
                     }
                 }
                 tempsCount=tempsPrivCount;
@@ -712,6 +731,7 @@ void  CStmApp::app_check_data()
         else if(memcmp(APP_PRE_GETOWVOLTCNT,cmd,5) == 0) {
             if(argcnt == 1) {
                 voltsPrivCount= atoi(argptr[0]); 
+                if (voltsPrivCount > VOLT_SENSORS_COUNT) voltsPrivCount = VOLT_SENSORS_COUNT;
                 if (voltsPrivCount!=voltsCount) app_cmd(APP_PRE_GETOWVOLTCNT,String(255));
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
                     syslog.log(LOG_DEBUG,"STMApp:one wire volt count "+String(voltsPrivCount));
@@ -722,14 +742,15 @@ void  CStmApp::app_check_data()
                     syslog.log(LOG_DEBUG,"STMApp:one wire volt data "+String(argptr[1]));
                 } 
                 voltsPrivCount= atoi(argptr[0]);
+                if (voltsPrivCount > VOLT_SENSORS_COUNT) voltsPrivCount = VOLT_SENSORS_COUNT;
                 if (voltsPrivCount>0) {
                     char* cmdptr;
                     char* ps=argptr[1];
                     for (uint8_t idx=0; idx<voltsPrivCount;idx++) {
                         if ((cmdptr=strchr(ps,','))!=NULL) *cmdptr='\0';
-                        strncpy(voltsId[idx].id,ps,sizeof(voltsId[idx].id));
+                        strlcpy(voltsId[idx].id,ps,sizeof(voltsId[idx].id));
+                        if (cmdptr==NULL) break;
                         ps=cmdptr+1;
-                        idx++;
                     }
                 }
                 voltsCount=voltsPrivCount;
@@ -806,7 +827,7 @@ void  CStmApp::app_check_data()
                 VdmSystem.stmMinRequired=versionExplode(minSTMRequired);
                 VdmSystem.stmVersionFalse=VdmSystem.stmNRevision<VdmSystem.stmMinRequired;
             #endif
-            if (memcmp(cmd,(const void*) &cmd_buffer,5) ==0) cmd_buffer="";
+            if (strncmp(cmd,cmd_buffer.c_str(),5) ==0) cmd_buffer="";
             appState=APP_IDLE;
         }
 
@@ -814,7 +835,7 @@ void  CStmApp::app_check_data()
             if(argcnt > 0) {
                 VdmSystem.stmID=atoi(argptr[0]); 
             }
-            if (memcmp(cmd,(const void*) &cmd_buffer,5) ==0) cmd_buffer="";
+            if (strncmp(cmd,cmd_buffer.c_str(),5) ==0) cmd_buffer="";
             appState=APP_IDLE;
         }
 
@@ -964,6 +985,9 @@ void CStmApp::appHandler()
                 VdmSystem.setSystemState(systemStateError,systemMsgSTMReset);
                 appTimeOuts=0; 
                 Stm32.ResetSTM32(true);
+                // the STM32 restarts with its start position, send all targets again
+                memset(target_position_mirror,0xFF,sizeof(target_position_mirror));
+                pendingTargetValve=255;
                 Messenger.sendMessage ("STM failed","STM failed: max app timeouts reached, reset STM"); 
                 stmFailed=true;
                 appState=APP_IDLE; 
@@ -1022,7 +1046,11 @@ void  CStmApp::app_comm_machine()
                         // check if target has changed
                         if(target_position_mirror[x] != actuators[x].target_position)
                         {
-                            target_position_mirror[x] = actuators[x].target_position;
+                            // the STM32 ignores targets above 100 % without answer
+                            if (actuators[x].target_position>100) actuators[x].target_position=100;
+                            // mirror is updated with the answer of the STM32, otherwise the target is sent again
+                            pendingTargetValve = x;
+                            pendingTargetValue = actuators[x].target_position;
                             if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
                                 syslog.log(LOG_DEBUG, "STMApp:valve position has changed : "+String(VdmConfig.configFlash.valvesConfig.valveConfig[x].name)+"(#"+String(x+1)+") = "+String(actuators[x].target_position));
                             }
@@ -1148,7 +1176,6 @@ void  CStmApp::app_comm_machine()
 
         case COMM_HANDLEQUEUE:
                 if ((cmd_buffer=="") && (Queue.available()>0) && (stmStatus>=STM_READY)) {
-                    memset(&cmd_buffer,0x0,sizeof(cmd_buffer));
                     cmd_buffer=Queue.pop();
                     #ifdef EnvDevelop
                         UART_DBG.println("pop "+String(cmd_buffer));

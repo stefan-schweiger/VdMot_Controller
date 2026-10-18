@@ -679,7 +679,24 @@ int CStm32::PrepareFile(String FileName)
   if (myflashfile.fsfile) {
 
     myflashfile.size = myflashfile.fsfile.size();
- 
+
+    // reject files which can not be a STM32 firmware, this is checked before the flash of the STM32 is erased
+    // a firmware starts with the vector table : initial stack pointer in RAM, reset handler in flash
+    uint32_t vectors[2] = {0};
+    if ((myflashfile.size >= STM32OTA_BLOCKSIZE) && (myflashfile.size <= STM32OTA_MAXSIZE)) {
+      myflashfile.fsfile.read((uint8_t*) vectors, sizeof(vectors));
+    }
+    if (((vectors[0] & 0xFFF00000) != 0x20000000) || ((vectors[1] & 0xFFF00000) != 0x08000000)) {
+      #ifdef EnvDevelop
+        UART_DBG.println("--> not a STM32 firmware file");
+      #endif
+      if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_ATOMIC) {
+        syslog.log(LOG_DEBUG, "STM32 ota: get File --> not a STM32 firmware file, size "+String(myflashfile.size));
+      }
+      myflashfile.fsfile.close();
+      return -1;
+    }
+
     myflashfile.blockcnt = myflashfile.size / STM32OTA_BLOCKSIZE;
     myflashfile.lastbytes = myflashfile.size % STM32OTA_BLOCKSIZE;
     #ifdef EnvDevelop
