@@ -387,9 +387,34 @@ void handleGetSysConfig(AsyncWebServerRequest *request)
   request->send(200,aj,Web.getSysConfig(VdmConfig.configFlash.systemConfig));
 }
 
+// changes and secrets need http basic auth when a user name and password are configured,
+// the web ui sends the credentials after login, other clients get the browser login
+static bool isAuthorized(AsyncWebServerRequest *request)
+{
+  const char* user = VdmConfig.configFlash.netConfig.userName;
+  const char* pwd = VdmConfig.configFlash.netConfig.userPwd;
+  if ((strlen(user)==0) || (strlen(pwd)==0)) return true;
+  return request->authenticate(user, pwd);
+}
+
+// answers with 401 if the request is not authorized
+static bool checkAuthorized(AsyncWebServerRequest *request)
+{
+  if (isAuthorized(request)) return true;
+  request->requestAuthentication(NULL, false);
+  return false;
+}
+
 void handleGetMsgConfig(AsyncWebServerRequest *request) 
 { 
-  request->send(200,aj,Web.getMsgConfig(VdmConfig.configFlash.messengerConfig));
+  // the tokens and passwords are only sent to authorized requests, the ui loads this page also without login
+  VDM_MSG_CONFIG msgConfig = VdmConfig.configFlash.messengerConfig;
+  if (!isAuthorized(request)) {
+    memset(msgConfig.pushover.appToken,0,sizeof(msgConfig.pushover.appToken));
+    memset(msgConfig.pushover.userToken,0,sizeof(msgConfig.pushover.userToken));
+    memset(msgConfig.email.pwd,0,sizeof(msgConfig.email.pwd));
+  }
+  request->send(200,aj,Web.getMsgConfig(msgConfig));
 }
 
 void handleGetStm(AsyncWebServerRequest *request) 
@@ -421,7 +446,7 @@ bool handleCmd(JsonObject doc)
   bool found = false;
 
   if (!doc["action"].isNull()) {
-    const char* d=doc["action"].as<const char*>();
+    const char* d=doc["action"] | "";
     uint8_t i=0;
   
     for (p=names; *p!=NULL; p++) {
@@ -439,7 +464,8 @@ bool handleCmd(JsonObject doc)
 void handleUploadFile(AsyncWebServerRequest *request, const String& filename, size_t index, 
             uint8_t *data, size_t len, bool final)
 {
-  if(!index){
+  bool authorized = isAuthorized(request);
+  if(!index && authorized){
     String thisFileName = filename;
     // open the file on first call and store the file handle in the request object
     #ifdef EnvDevelop
@@ -456,13 +482,14 @@ void handleUploadFile(AsyncWebServerRequest *request, const String& filename, si
     #endif
     request->_tempFile = SPIFFS.open(thisFileName, "w");
   }
-  if(len) {
+  if(len && request->_tempFile) {
     // stream the incoming chunk to the opened file
     request->_tempFile.write(data,len);
   }
   if(final){
     // close the file handle as the upload is now done
-    request->_tempFile.close();
+    if (request->_tempFile) request->_tempFile.close();
+    if (!authorized) return request->requestAuthentication(NULL, false);
     request->send(200, aj, Web.getFSDir()); 
     #ifdef EnvDevelop
       UART_DBG.println("upload finished");
@@ -481,7 +508,7 @@ void CServerServices::stmDoUpdate(JsonObject doc)
 
   if (!doc["file"].isNull()) {
     if (!doc["cmd"].isNull()) {
-    String thisFileName = doc["file"].as<const char*>();
+    String thisFileName = doc["file"] | "";
     if (!thisFileName.startsWith("/")) thisFileName = "/"+thisFileName;
     uint8_t command = doc["cmd"];
     #ifdef EnvDevelop
@@ -526,6 +553,7 @@ void  CServerServices::initServer()
   );
 
   AsyncCallbackJsonWebHandler* stmDoUpdateHandler = new AsyncCallbackJsonWebHandler("/stmdoupdate", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       ServerServices.stmDoUpdate (jsonObj);
@@ -535,6 +563,7 @@ void  CServerServices::initServer()
   server.addHandler(stmDoUpdateHandler);
 
   AsyncCallbackJsonWebHandler* setValveHandler = new AsyncCallbackJsonWebHandler("/setvalve", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       ServerServices.postSetValve (jsonObj);
@@ -544,6 +573,7 @@ void  CServerServices::initServer()
   server.addHandler(setValveHandler);
 
   AsyncCallbackJsonWebHandler* netCfgHandler = new AsyncCallbackJsonWebHandler("/netconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postNetCfg (jsonObj);
@@ -553,6 +583,7 @@ void  CServerServices::initServer()
   server.addHandler(netCfgHandler);
 
   AsyncCallbackJsonWebHandler* sysLogCfgHandler = new AsyncCallbackJsonWebHandler("/sysLogCfg", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postSysLogCfg (jsonObj);
@@ -562,6 +593,7 @@ void  CServerServices::initServer()
   server.addHandler(sysLogCfgHandler);  
   
   AsyncCallbackJsonWebHandler* protCfgHandler = new AsyncCallbackJsonWebHandler("/protconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postProtCfg (jsonObj);
@@ -571,6 +603,7 @@ void  CServerServices::initServer()
   server.addHandler(protCfgHandler);
 
   AsyncCallbackJsonWebHandler* valvesCfgHandler = new AsyncCallbackJsonWebHandler("/valvesconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postValvesCfg (jsonObj);
@@ -580,6 +613,7 @@ void  CServerServices::initServer()
   server.addHandler(valvesCfgHandler);
   
 AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebHandler("/valvesctrlconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postValvesControlCfg (jsonObj);
@@ -590,6 +624,7 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
   
   
   AsyncCallbackJsonWebHandler* tempsCfgHandler = new AsyncCallbackJsonWebHandler("/tempsconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postTempsCfg (jsonObj);
@@ -599,6 +634,7 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
   server.addHandler(tempsCfgHandler);
 
   AsyncCallbackJsonWebHandler* voltsCfgHandler = new AsyncCallbackJsonWebHandler("/voltsconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postVoltsCfg (jsonObj);
@@ -617,6 +653,7 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
   server.addHandler(tempsAuthHandler);
 
   AsyncCallbackJsonWebHandler* cmdHandler = new AsyncCallbackJsonWebHandler("/cmd", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       if (handleCmd (jsonObj))
@@ -627,6 +664,7 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
   server.addHandler(cmdHandler);
 
   AsyncCallbackJsonWebHandler* sysCfgHandler = new AsyncCallbackJsonWebHandler("/sysconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postSysCfg (jsonObj);
@@ -636,6 +674,7 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
   server.addHandler(sysCfgHandler);
   
 AsyncCallbackJsonWebHandler* msgCfgHandler = new AsyncCallbackJsonWebHandler("/msgconfig", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       VdmConfig.postMessengerCfg (jsonObj);
@@ -645,6 +684,7 @@ AsyncCallbackJsonWebHandler* msgCfgHandler = new AsyncCallbackJsonWebHandler("/m
   server.addHandler(msgCfgHandler);
 
 AsyncCallbackJsonWebHandler* testPOHandler = new AsyncCallbackJsonWebHandler("/testPO", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       Messenger.testPO(jsonObj);
@@ -654,6 +694,7 @@ AsyncCallbackJsonWebHandler* testPOHandler = new AsyncCallbackJsonWebHandler("/t
   server.addHandler(testPOHandler);  
 
 AsyncCallbackJsonWebHandler* testEmailHandler = new AsyncCallbackJsonWebHandler("/testEmail", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
       Messenger.testEmail(jsonObj);
@@ -662,7 +703,7 @@ AsyncCallbackJsonWebHandler* testEmailHandler = new AsyncCallbackJsonWebHandler(
   });
   server.addHandler(testEmailHandler);  
 
-  WT32AsyncOTA.begin(&server);    // Start WT32OTA
+  WT32AsyncOTA.begin(&server, isAuthorized);    // Start WT32OTA
   server.begin();
 }
 

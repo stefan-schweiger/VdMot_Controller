@@ -71,9 +71,8 @@ CWT32AsyncOTA WT32AsyncOTA;
 CWT32AsyncOTA::CWT32AsyncOTA()
 {
     _id = getID();
-    _userName = "";
-    _pwd = "";
-    _authRequired = false;
+    _authorized = NULL;
+    _uploadError = true;
 }
 
 void CWT32AsyncOTA::setID(const char* id)
@@ -81,26 +80,19 @@ void CWT32AsyncOTA::setID(const char* id)
     _id = id;
 }
 
-void CWT32AsyncOTA::begin(AsyncWebServer *server, const char* userName, const char* pwd)
+bool CWT32AsyncOTA::checkAuthorized(AsyncWebServerRequest *request)
+{
+    return ((_authorized == NULL) || _authorized(request));
+}
+
+void CWT32AsyncOTA::begin(AsyncWebServer *server, bool (*authorized)(AsyncWebServerRequest *request))
 {
     _server = server;
-
-    if (strlen(userName) > 0) {
-        _authRequired = true;
-        _userName = userName;
-        _pwd = pwd;
-    } else {
-        _authRequired = false;
-        _userName = "";
-        _pwd = "";
-    }
+    _authorized = authorized;
+    _uploadError = true;        // set to false by the upload handler when an update has begun
 
     _server->on("/update/identity", HTTP_GET, [&](AsyncWebServerRequest *request){
-        if(_authRequired){
-            if(!request->authenticate(_userName.c_str(), _pwd.c_str())){
-                return request->requestAuthentication();
-            }
-        }
+        if (!checkAuthorized(request)) return request->requestAuthentication(NULL, false);
         #if defined(ESP8266)
             request->send(200, "application/json", "{\"id\": \""+_id+"\", \"hardware\": \"ESP8266\"}");
         #elif defined(ESP32)
@@ -109,75 +101,65 @@ void CWT32AsyncOTA::begin(AsyncWebServer *server, const char* userName, const ch
     });
 
     _server->on("/update", HTTP_GET, [&](AsyncWebServerRequest *request){
-        if(_authRequired){
-            if(!request->authenticate(_userName.c_str(), _pwd.c_str())){
-                return request->requestAuthentication();
-            }
-        }
+        if (!checkAuthorized(request)) return request->requestAuthentication(NULL, false);
         AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", WT32Upate_HTML, WT32Upate_HTML_SIZE);
         response->addHeader("Content-Encoding", "gzip");
         request->send(response);
     });
 
     _server->on("/update", HTTP_POST, [&](AsyncWebServerRequest *request) {
-        if(_authRequired){
-            if(!request->authenticate(_userName.c_str(), _pwd.c_str())){
-                return request->requestAuthentication();
-            }
-        }
-        // the request handler is triggered after the upload has finished... 
-        // create the response, add header, and send response
-        AsyncWebServerResponse *response = request->beginResponse((Update.hasError())?500:200, "text/plain", (Update.hasError())?"FAIL":"OK");
+        // the request handler is triggered after the upload has finished, the upload handler sends no response
+        if (!checkAuthorized(request)) return request->requestAuthentication(NULL, false);
+        bool success = !_uploadError && !Update.hasError() && Update.isFinished();
+        AsyncWebServerResponse *response = request->beginResponse(success?200:500, "text/plain", success?"OK":"FAIL");
         response->addHeader("Connection", "close");
         response->addHeader("Access-Control-Allow-Origin", "*");
         request->send(response);
-        restart();
+        // only restart into a complete new firmware, a failed update keeps the running one
+        if (success) restart();
     }, [&](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-        //Upload handler chunks in data
-        if(_authRequired){
-            if(!request->authenticate(_userName.c_str(), _pwd.c_str())){
-                return request->requestAuthentication();
-        }
-    }
+        // upload handler, chunks in data
+        // an unauthorized upload is ignored, the request handler answers with 401
+        if (!checkAuthorized(request)) return;
 
-    if (!index) {
-        if(!request->hasParam("MD5", true)) {
-            return request->send(400, "text/plain", "MD5 parameter missing");
-        }
+        if (!index) {
+            _uploadError = true;
+            if (!request->hasParam("MD5", true)) return;
+            if (!Update.setMD5(request->getParam("MD5", true)->value().c_str())) return;
 
-        if(!Update.setMD5(request->getParam("MD5", true)->value().c_str())) {
-            return request->send(400, "text/plain", "MD5 parameter invalid");
-        }
-
-        #if defined(ESP8266)
-            int cmd = (filename == "filesystem") ? U_FS : U_FLASH;
-            Update.runAsync(true);
-            size_t fsSize = ((size_t) &_FS_end - (size_t) &_FS_start);
-            uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-            if (!Update.begin((cmd == U_FS)?fsSize:maxSketchSpace, cmd)){ // Start with max available size
-        #elif defined(ESP32)
-            int cmd = (filename == "filesystem") ? U_SPIFFS : U_FLASH;
-            if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) { // Start with max available size
-        #endif
-            Update.printError(Serial);
-            return request->send(400, "text/plain", "OTA could not begin");
+            #if defined(ESP8266)
+                int cmd = (filename == "filesystem") ? U_FS : U_FLASH;
+                Update.runAsync(true);
+                size_t fsSize = ((size_t) &_FS_end - (size_t) &_FS_start);
+                uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+                if (!Update.begin((cmd == U_FS)?fsSize:maxSketchSpace, cmd)){ // Start with max available size
+            #elif defined(ESP32)
+                int cmd = (filename == "filesystem") ? U_SPIFFS : U_FLASH;
+                if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) { // Start with max available size
+            #endif
+                Update.printError(Serial);
+                return;
             }
+            _uploadError = false;
         }
+
+        if (_uploadError) return;
 
         // Write chunked data to the free sketch space
         if (len) {
             if (Update.write(data, len) != len) {
-                return request->send(400, "text/plain", "OTA could not begin");
+                Update.printError(Serial);
+                _uploadError = true;
+                Update.abort();
+                return;
             }
         }
             
         if (final) { // if the final flag is set then this is the last frame of data
             if (!Update.end(true)) { //true to set the size to the current progress
                 Update.printError(Serial);
-                return request->send(400, "text/plain", "Could not end OTA");
+                _uploadError = true;
             }
-        }else{
-            return;
         }
     });
 }

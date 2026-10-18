@@ -221,6 +221,7 @@ var getFSIntervalID = null;
 		fd.append('STMFiles', file);
 		// send `POST` request
 		await (await (fetch('/fupload?dir=stm', {
+			headers: authHeaders(),
 			method: 'POST',
 			body: fd
 		})
@@ -228,6 +229,12 @@ var getFSIntervalID = null;
 		.then(json => app.methods.generateFilesList (json))
 		.catch(err => console.error(err))
 		))
+	}
+
+	// credentials for the http basic auth of the server, stored by the login of the main page
+	function authHeaders() {
+		let token = (localStorage.rememberMe==="true") ? localStorage.getItem("authToken") : sessionStorage.getItem("authToken");
+		return (token) ? {'Authorization': 'Basic '+token} : {};
 	}
 
 	var app = {
@@ -360,9 +367,9 @@ var getFSIntervalID = null;
 		async postJson(link,postData){
 			let data = await (await (fetch('http:/'+link,
 			{
-			 headers: {
+			 headers: Object.assign({
 				'Content-Type': 'application/json'
-				},
+				}, authHeaders()),
 				method: 'POST',
 				body: postData
 			})
@@ -377,7 +384,7 @@ var getFSIntervalID = null;
 		}
 	,	
 		async getJson(link){
-			let data = await (await (fetch('http:/'+link)
+			let data = await (await (fetch('http:/'+link, {headers: authHeaders()})
 			.then(res => {
 			  return res.json()
 			})

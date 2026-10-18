@@ -72,16 +72,17 @@ class CWT32AsyncOTA
     public:
     CWT32AsyncOTA();
     void setID(const char* id);
-    void begin(AsyncWebServer *server, const char* userName="", const char* pwd="");    
+    // authorized is called for every request, NULL = no authentication
+    void begin(AsyncWebServer *server, bool (*authorized)(AsyncWebServerRequest *request)=NULL);    
     void restart();
 
     private:
     AsyncWebServer *_server;
     String getID();
+    bool checkAuthorized(AsyncWebServerRequest *request);
     String _id;
-    String _userName;
-    String _pwd;
-    bool _authRequired;
+    bool (*_authorized)(AsyncWebServerRequest *request);
+    bool _uploadError;
 };
 
 extern CWT32AsyncOTA WT32AsyncOTA;

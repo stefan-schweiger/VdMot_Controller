@@ -2203,12 +2203,18 @@ Publish on change on server side is not recommended with this option">tValue aft
 				case 3 : {	
 							let rememberMe = id("login-rememberMe").checked;
 							localStorage.rememberMe=rememberMe===true;
+							// credentials for the http basic auth of all changes, utf-8 encoded
+							let authToken = btoa(unescape(encodeURIComponent(login.user+':'+login.pwd)));
 							if (localStorage.rememberMe==="true") {
 								localStorage.login=true;
 								sessionStorage.login=null;
+								localStorage.authToken=authToken;
+								sessionStorage.removeItem("authToken");
 							} else {
 								sessionStorage.login=true;
 								localStorage.login=null;
+								sessionStorage.authToken=authToken;
+								localStorage.removeItem("authToken");
 							}
 							showAllTabs= true;
 							showAllTabsNow();
@@ -3024,6 +3030,8 @@ Publish on change on server side is not recommended with this option">tValue aft
 			id("logout-button").onclick = function(){
 				localStorage.login=null; 
 				sessionStorage.login=null;
+				localStorage.removeItem("authToken");
+				sessionStorage.removeItem("authToken");
 				showAllTabs=false;
 				showAllTabsNow();
 				setLoginButton();
@@ -4445,12 +4453,18 @@ Publish on change on server side is not recommended with this option">tValue aft
 			}
 		}
 		
+		// credentials for the http basic auth of the server, stored by the login
+		function authHeaders() {
+			let token = (localStorage.rememberMe==="true") ? localStorage.getItem("authToken") : sessionStorage.getItem("authToken");
+			return (token) ? {'Authorization': 'Basic '+token} : {};
+		}
+
 		async function postJson(link,postData){
 			const data = await (await (fetch('http:/'+link,
 			{
-			 headers: {
+			 headers: Object.assign({
 				'Content-Type': 'application/json'
-				},
+				}, authHeaders()),
 				method: 'POST',
 				body: postData
 			})
@@ -4465,7 +4479,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 		}
 			
 		async function getJson(link){
-			const data = await (await (fetch('http:/'+link)
+			const data = await (await (fetch('http:/'+link, {headers: authHeaders()})
 			.then(res => {
 			  return res.json()
 			})
