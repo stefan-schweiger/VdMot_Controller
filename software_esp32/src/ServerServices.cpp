@@ -398,10 +398,11 @@ static bool isAuthorized(AsyncWebServerRequest *request)
 }
 
 // answers with 401 if the request is not authorized
+// no WWW-Authenticate header, the browser would show its login dialog for every api call of the ui
 static bool checkAuthorized(AsyncWebServerRequest *request)
 {
   if (isAuthorized(request)) return true;
-  request->requestAuthentication(NULL, false);
+  request->send(401, aj, "{\"auth\":0}");
   return false;
 }
 
@@ -489,7 +490,7 @@ void handleUploadFile(AsyncWebServerRequest *request, const String& filename, si
   if(final){
     // close the file handle as the upload is now done
     if (request->_tempFile) request->_tempFile.close();
-    if (!authorized) return request->requestAuthentication(NULL, false);
+    if (!authorized) return request->send(401, aj, "{\"auth\":0}");
     request->send(200, aj, Web.getFSDir()); 
     #ifdef EnvDevelop
       UART_DBG.println("upload finished");

@@ -3370,10 +3370,29 @@ Publish on change on server side is not recommended with this option">tValue aft
 			netCfg.syslogLevel=id("netcfg-syslog-select").selectedIndex;
 			netCfg.syslogIp=id("netcfg-syslog-ip").value;
 			netCfg.syslogPort=id("netcfg-syslog-port").value;
+			let userPwdChanged=UserPwdHasChanged;
 			WifiPwdHasChanged=false;
 			UserPwdHasChanged=false;
-			await postJson("netconfig",JSON.stringify(netCfg));
+			let res = await postJson("netconfig",JSON.stringify(netCfg));
+			// the server uses changed credentials immediately, the following posts need them
+			if (res && res.res==="ok") updateAuthToken(netCfg.userName, (userPwdChanged===true) ? netCfg.userPwd : null);
 			return (true);
+		}
+
+		// stores the credentials for the http basic auth, pwd null = password unchanged
+		function updateAuthToken(user, pwd) {
+			let storage = (localStorage.rememberMe==="true") ? localStorage : sessionStorage;
+			if (pwd===null) {
+				let token = storage.getItem("authToken");
+				if (!token) return;
+				let credentials = decodeURIComponent(escape(atob(token)));
+				pwd = credentials.substring(credentials.indexOf(':')+1);
+			}
+			if ((user==="") || (pwd==="")) {
+				storage.removeItem("authToken");
+				return;
+			}
+			storage.setItem("authToken", btoa(unescape(encodeURIComponent(user+':'+pwd))));
 		}
 		
 		async function postProtCfg() {

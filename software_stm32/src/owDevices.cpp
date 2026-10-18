@@ -203,7 +203,8 @@ void temperature_loop() {
               
     case T_OUTPUT:  
               if(devcnt < noOfDS18Devices) {
-                temp = sensors.getTempCByIndex(devcnt);
+                // by address, the index on the bus differs from the index in tempsensors if there are other devices
+                temp = sensors.getTempC(tempsensors[devcnt].address);
                 tempsensors[devcnt].temperature = round(temp*10);
                 #ifdef tempDebug
                   COMM_DBG.print("Sensor temp ");

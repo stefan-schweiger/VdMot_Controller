@@ -83,6 +83,14 @@ void CServices::checkServiceValves()
   }
 }
 
+// true if the temperature sensor (index in tempsConfig) is the pi control value source of the valve
+static bool isValueSourceSensor(uint8_t valveIdx, int8_t tempIdx)
+{
+  uint8_t source = VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource;
+  return (((source==1) && (StmApp.actuators[valveIdx].tIdx1==tempIdx+1)) ||
+          ((source==2) && (StmApp.actuators[valveIdx].tIdx2==tempIdx+1)));
+}
+
 void CServices::checkDS18()
 {
   int8_t tempIdx;
@@ -106,13 +114,8 @@ void CServices::checkDS18()
               }
               tempStates[tempIdx].timeOut=0;
               if (VdmConfig.configFlash.protConfig.mqttConfig.flags.timeoutDSActive) {
-                valveIdx=StmApp.findTempIdxInValve (tempIdx);
-                if ((valveIdx>=0) && (valveIdx<ACTUATOR_COUNT)) {
-                  if (((StmApp.actuators[valveIdx].tIdx1 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==1)) ||
-                    ((StmApp.actuators[valveIdx].tIdx2 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==2)))
-                  {
-                      PiControl[valveIdx].setFailed(VdmConfig.configFlash.protConfig.mqttConfig.toPos);
-                  }
+                for (valveIdx=0; valveIdx<ACTUATOR_COUNT; valveIdx++) {
+                  if (isValueSourceSensor(valveIdx, tempIdx)) PiControl[valveIdx].setFailed(VdmConfig.configFlash.protConfig.mqttConfig.toPos);
                 }
               }
             }
@@ -121,14 +124,9 @@ void CServices::checkDS18()
       if (!tempStates[tempIdx].tempFailed) {
         tempStates[tempIdx].messengerSent= false;
         tempStates[tempIdx].timeOut=0;
-        // sensor is back, release the pi control of the valve which uses it as value source
-        valveIdx=StmApp.findTempIdxInValve (tempIdx);
-        if ((valveIdx>=0) && (valveIdx<ACTUATOR_COUNT)) {
-          if (((StmApp.actuators[valveIdx].tIdx1 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==1)) ||
-            ((StmApp.actuators[valveIdx].tIdx2 > 0) && (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIdx].valueSource==2)))
-          {
-            PiControl[valveIdx].failed=false;
-          }
+        // sensor is back, release the pi control of the valves which use it as value source
+        for (valveIdx=0; valveIdx<ACTUATOR_COUNT; valveIdx++) {
+          if (isValueSourceSensor(valveIdx, tempIdx)) PiControl[valveIdx].failed=false;
         }
       }
     }

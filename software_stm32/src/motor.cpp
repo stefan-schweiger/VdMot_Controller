@@ -719,6 +719,8 @@ void valve_loop () {
                       #ifdef motDebug
                         COMM_DBG.print("A_SET1: cant open valve");                  
                       #endif
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                       valvestate = A_IDLE;
                     }
                   }

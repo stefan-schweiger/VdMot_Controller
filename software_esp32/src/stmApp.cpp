@@ -445,10 +445,10 @@ void  CStmApp::app_check_data()
                 found = true;
                 buflen = 0;         // reset counter
                 bufptr = buffer;    // reset ptr    
-                break;
                 if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_ATOMIC) {
                     syslog.log(LOG_DEBUG, "STMApp:found new data packet: >" + String(buffer) + "<");
                 }
+                break;
             }
         }
         
@@ -556,12 +556,12 @@ void  CStmApp::app_check_data()
         // get set target answer
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		else if(memcmp(APP_PRE_SETTARGETPOS,cmd,5) == 0) {
-            if(argcnt == 0) {
-                settarget_check = true; 
-                if (pendingTargetValve<ACTUATOR_COUNT) {
-                    target_position_mirror[pendingTargetValve] = pendingTargetValue;
-                    pendingTargetValve=255;
-                }
+            if(argcnt == 0) settarget_check = true; 
+            // older STM32 firmware answers without arguments, newer with valve and target
+            bool ackMatches = (argcnt == 0) || ((argcnt >= 2) && (atoi(argptr[0]) == pendingTargetValve) && (atoi(argptr[1]) == pendingTargetValue));
+            if (ackMatches && (pendingTargetValve<ACTUATOR_COUNT)) {
+                target_position_mirror[pendingTargetValve] = pendingTargetValue;
+                pendingTargetValve=255;
             }
             if (strncmp(cmd,cmd_buffer.c_str(),5) ==0) cmd_buffer="";
             appState=APP_IDLE;
@@ -986,7 +986,8 @@ void CStmApp::appHandler()
                 appTimeOuts=0; 
                 Stm32.ResetSTM32(true);
                 // the STM32 restarts with its start position, send all targets again
-                memset(target_position_mirror,0xFF,sizeof(target_position_mirror));
+                // before the init has finished the targets are not valid yet, they are set with the motor chars
+                if (stmInitState==STM_INIT_FINISHED) memset(target_position_mirror,0xFF,sizeof(target_position_mirror));
                 pendingTargetValve=255;
                 Messenger.sendMessage ("STM failed","STM failed: max app timeouts reached, reset STM"); 
                 stmFailed=true;

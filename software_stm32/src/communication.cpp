@@ -275,7 +275,13 @@ int16_t communication_loop (void) {
 						myvalvemots[x].pending_target = VALVE_NO_PENDING_TARGET;
 					}
 					else myvalvemots[x].pending_target = (byte) y;
-					COMM_SER.println(APP_PRE_SETTARGETPOS);
+					// answer with valve and target, so the ESP32 can match it to its request
+					COMM_SER.print(APP_PRE_SETTARGETPOS);
+					COMM_SER.print(" ");
+					COMM_SER.print(x, DEC);
+					COMM_SER.print(" ");
+					COMM_SER.print(y, DEC);
+					COMM_SER.println(" ");
 				}
 			}
 			else {
