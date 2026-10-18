@@ -41,6 +41,8 @@
 #define CMD_A_TARGET    't'
 #define CMD_A_TEST      'x'
 
+#define VALVE_NO_PENDING_TARGET   255
+
 #define VLV_STATE_IDLE      (byte) 0x01       // nothing to do
 #define VLV_STATE_OPENING   (byte) 0x02       // opens
 #define VLV_STATE_CLOSING   (byte) 0x03       // closes
@@ -65,6 +67,7 @@ struct valvemotor {
   // unsigned int learn_time;
   // unsigned int learn_movements;
   byte target_position;
+  byte pending_target;      // target received during calibration, VALVE_NO_PENDING_TARGET = none
   byte actual_position;
   byte status;
   uint8_t calibration;

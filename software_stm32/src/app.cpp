@@ -50,6 +50,7 @@ int16_t app_setup (void) {
   // init valve data
   for (unsigned int x = 0;x<ACTUATOR_COUNT;x++) {    
       myvalvemots[x].target_position = 50;
+      myvalvemots[x].pending_target = VALVE_NO_PENDING_TARGET;
       myvalvemots[x].actual_position = 50;
       myvalvemots[x].status = VLV_STATE_UNKNOWN;
       myvalvemots[x].calibration = false;
@@ -87,6 +88,14 @@ int16_t app_loop (void) {
   static unsigned int testvlvindex = 0;
 
   reset_check();
+
+  // targets received during a calibration are applied when it has finished
+  for (unsigned int x = 0; x<ACTUATOR_COUNT; x++) {
+    if (!myvalvemots[x].calibration && (myvalvemots[x].pending_target <= 100)) {
+      myvalvemots[x].target_position = myvalvemots[x].pending_target;
+      myvalvemots[x].pending_target = VALVE_NO_PENDING_TARGET;
+    }
+  }
 
     // if valve machine is idle search for new tasks
     if(valve_getstate() == A_IDLE) 
@@ -324,7 +333,7 @@ void app_scan_valves()
 // if valve = 255, all valves will be opened fully
 int16_t app_set_valveopen(int16_t valve) {
 
-  if(valve < ACTUATOR_COUNT) {
+  if((valve >= 0) && (valve < ACTUATOR_COUNT)) {
     myvalvemots[valve].target_position = 100;
 		myvalvemots[valve].status = VLV_STATE_FULLOPEN;
     return 0;
@@ -358,11 +367,13 @@ int16_t app_match_sensors() {
   #ifdef appDebug
     COMM_DBG.println("Read 1-wire sensor addresses from eeprom");
   #endif
-  numberOfDevices = sensors.getDeviceCount();
+  // sensorindex1/2 are indices into tempsensors, which only holds the DS18 sensors,
+  // the index on the bus differs if there are other devices like DS2438
+  numberOfDevices = noOfDS18Devices;
     
   for (unsigned int owsensorindex=0; owsensorindex<numberOfDevices; owsensorindex++)
   {
-      sensors.getAddress(currAddress, owsensorindex);
+      memcpy(currAddress, tempsensors[owsensorindex].address, sizeof(currAddress));
       #ifdef appDebug
         printAddress(currAddress);
       #endif

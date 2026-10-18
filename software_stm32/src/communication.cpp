@@ -102,9 +102,9 @@ void sendValvesTempsId (uint8_t idx, char delimiter)
 {
 	char mySendBuffer[30];
 	// 1st sensor 8 Byte adress
-	uint8_t y = myvalves[idx].sensorindex1;	
+	unsigned int y = myvalves[idx].sensorindex1;	
 				
-	if(y!=VALVE_SENSOR_UNKNOWN) {
+	if(y<MAXONEWIRECNT) {
 		memset (mySendBuffer,0x0,sizeof(mySendBuffer));				// reset sendbuffer
 		// 8 Byte adress
 		sensorID2Ascii (&tempsensors[y].address[0],mySendBuffer);
@@ -117,7 +117,7 @@ void sendValvesTempsId (uint8_t idx, char delimiter)
 
 	// 2nd sensor 8 Byte adress
 	y = myvalves[idx].sensorindex2;
-	if(y!=VALVE_SENSOR_UNKNOWN) {
+	if(y<MAXONEWIRECNT) {
 		memset (mySendBuffer,0x0,sizeof(mySendBuffer));				// reset sendbuffer
 		// 8 Byte adress
 		sensorID2Ascii (&tempsensors[y].address[0],mySendBuffer);
@@ -157,13 +157,13 @@ int16_t communication_loop (void) {
 
 	char*       cmdptr;
     char*	    cmdptrend;
-    char        cmd[10];
+    char        cmd[10] = {0};
 	
-    char		arg0[ARG_SIZE];	
-    char        arg1[ARG_SIZE];		
-	char        arg2[ARG_SIZE];
-	char        arg3[ARG_SIZE];	
-	char        arg4[ARG_SIZE];	
+    char		arg0[ARG_SIZE] = {0};	
+    char        arg1[ARG_SIZE] = {0};		
+	char        arg2[ARG_SIZE] = {0};
+	char        arg3[ARG_SIZE] = {0};	
+	char        arg4[ARG_SIZE] = {0};	
 
 	char *argptr[NO_OF_ARGS]={arg0,arg1,arg2,arg3,arg4};
 
@@ -186,11 +186,17 @@ int16_t communication_loop (void) {
 
         for (int c = 0; c < availcnt; c++)
         {           
-            *bufptr++ = (char) COMM_SER.read();
-            buflen++;
+            char ch = (char) COMM_SER.read();
+            // skip line end characters of the previous line (\n of \r\n)
+            if ((buflen==0) && ((ch=='\n') || (ch=='\r'))) continue;
+            // drop data that does not fit, the line end below terminates the overlong line
+            if (buflen<sizeof(buffer)-1) {
+                *bufptr++ = ch;
+                buflen++;
+            }
         }
-        if (buflen>=sizeof(buffer)) {
-            buffer[sizeof(buffer)-1] = '\n';
+        if (buflen>=sizeof(buffer)-1) {
+            buffer[buflen-1] = '\n';
         }
     }
 
@@ -201,13 +207,14 @@ int16_t communication_loop (void) {
         {           
             if(buffer[c] == '\n') 
             {
-				if(buffer[c-1]=='\r') buffer[c-1] = '\0';
+				if((c>0) && (buffer[c-1]=='\r')) buffer[c-1] = '\0';
                 else buffer[c] = '\0';
                 //COMM_SER.print("recv "); COMM_SER.println(buffer);
                 found = 1;
 
                 buflen = 0;           	// reset counter
                 bufptr = buffer;    	// reset ptr
+                break;
             }
         }
     }
@@ -262,8 +269,12 @@ int16_t communication_loop (void) {
 				#endif
 				if (y >= 0 && y <= 100 && x < ACTUATOR_COUNT) 
 				{
-					if (!myvalvemots[x].calibration)  // wdu ???
+					// a target received during calibration is applied when the calibration has finished
+					if (!myvalvemots[x].calibration) {
 						myvalvemots[x].target_position = (byte) y;
+						myvalvemots[x].pending_target = VALVE_NO_PENDING_TARGET;
+					}
+					else myvalvemots[x].pending_target = (byte) y;
 					COMM_SER.println(APP_PRE_SETTARGETPOS);
 				}
 			}
@@ -403,7 +414,7 @@ int16_t communication_loop (void) {
 				memset(sendbuffer,0x0,sizeof(sendbuffer));
 				itoa(myvalvemots[xx].status, sendbuffer, 10);				
 				COMM_SER.print(sendbuffer);
-				if (x<ACTUATOR_COUNT-1) COMM_SER.print(",");
+				if (xx<ACTUATOR_COUNT-1) COMM_SER.print(",");
 			}	
 			COMM_SER.println(" ");
 		}
@@ -707,10 +718,11 @@ int16_t communication_loop (void) {
 				#endif
 				if (x >= 0 && x < ACTUATOR_COUNT && y < MAXONEWIRECNT) 
 				{
-					if (noOfDS18Devices > 0) 
+					// y is the index in tempsensors, only sensors found on the bus
+					if (y < noOfDS18Devices) 
 					{
+						memcpy(currAddress, tempsensors[y].address, sizeof(currAddress));
 						// write sensor address code to eeprom layout mirror
-						sensors.getAddress(currAddress, y);
 						eep_content.owsensors1[x].familycode = currAddress[0];
 						eep_content.owsensors1[x].romcode[0] = currAddress[1];
 						eep_content.owsensors1[x].romcode[1] = currAddress[2];
@@ -750,10 +762,11 @@ int16_t communication_loop (void) {
 				#endif
 				if (x >= 0 && x < ACTUATOR_COUNT && y < MAXONEWIRECNT) 
 				{
-					if (noOfDS18Devices > 0) 
+					// y is the index in tempsensors, only sensors found on the bus
+					if (y < noOfDS18Devices) 
 					{
+						memcpy(currAddress, tempsensors[y].address, sizeof(currAddress));
 						// write sensor address code to eeprom layout mirror
-						sensors.getAddress(currAddress, y);
 						eep_content.owsensors2[x].familycode = currAddress[0];
 						eep_content.owsensors2[x].romcode[0] = currAddress[1];
 						eep_content.owsensors2[x].romcode[1] = currAddress[2];
@@ -788,7 +801,8 @@ int16_t communication_loop (void) {
 		else if(memcmp(APP_PRE_SETVLVSENSOR,&cmd[0],5) == 0) {
 			x = atoi(argptr[0]); // valve index
 			
-			if(argcnt == 3) {				
+			// check x before the eeprom address is computed, setValveIDSensor only sees it truncated to 8 bit
+			if((argcnt == 3) && (x < ACTUATOR_COUNT)) {				
 				#ifdef commDebug 
 					COMM_DBG.println("comm: set valve sensors");
 				#endif
@@ -878,20 +892,26 @@ int16_t communication_loop (void) {
 				x = atoi(argptr[0]);
 				y = atoi(argptr[1]);
 
-				if (x>=5 && x<=50 && y>=5 && y<=50) {
-					currentbound_low_fac = atoi(argptr[0]);
-					currentbound_high_fac = atoi(argptr[1]);
-					startOnPower = atoi (argptr[2]);
+				long sop = atol(argptr[2]);
+				long minCounts = (argcnt >= 4) ? atol(argptr[3]) : noOfMinCounts;
+				long calibReps = (argcnt == 5) ? atol(argptr[4]) : maxCalibRetries;
+
+				// same limits as used when the values are loaded from eeprom
+				if (x>=5 && x<=50 && y>=5 && y<=50 && sop>=0 && sop<=100 &&
+					minCounts>=0 && minCounts<=60000 && calibReps>=0 && calibReps<=2) {
+					currentbound_low_fac = x;
+					currentbound_high_fac = y;
+					startOnPower = sop;
 
 					eep_content.currentbound_low_fac = currentbound_low_fac;
 					eep_content.currentbound_high_fac = currentbound_high_fac;
 					eep_content.startOnPower = startOnPower;
 					if (argcnt >= 4) {
-						noOfMinCounts = atoi (argptr[3]);
+						noOfMinCounts = minCounts;
 						eep_content.noOfMinCounts = noOfMinCounts;	
 					}
 					if (argcnt == 5) {
-						maxCalibRetries = atoi (argptr[4]);
+						maxCalibRetries = calibReps;
 						eep_content.maxCalibRetries = maxCalibRetries;	
 					}
 					eeprom_changed();

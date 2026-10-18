@@ -86,6 +86,7 @@ void setDeviceAddress() {
     {
         sensors.getAddress(thisSensorAddress, i);
         if (thisSensorAddress[0] == 0x26) {
+          if (noOfDS2438Devices >= MAXDS2438CNT) continue;      // array is full
           sensors.getAddress(voltsensors[noOfDS2438Devices].address, i);
           #ifdef tempDebug
             printAddress(voltsensors[noOfDS2438Devices].address);       
@@ -95,6 +96,7 @@ void setDeviceAddress() {
          
         } else {
           if (sensors.validFamily(thisSensorAddress)) {
+            if (noOfDS18Devices >= MAXONEWIRECNT) continue;       // array is full
             sensors.getAddress(tempsensors[noOfDS18Devices].address, i);
             #ifdef tempDebug
               printAddress(tempsensors[noOfDS18Devices].address);       

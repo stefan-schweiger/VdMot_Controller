@@ -59,17 +59,20 @@ void BootLoop(void) {
   static unsigned int timer = 0;
   static int ledtimer = 0;
   static int state = 0;
-  unsigned char buffer2[10];
+  static unsigned char buffer2[8] = {0};
 
   if (state == 0) {
     timer++;
     if(timer > 3000) state = 2;
   
-    if (Serial1.available() >= 8) {        
-      Serial1.readBytes(buffer2, 8);
+    // compare the last 8 received bytes, a stray byte before the sequence must not shift it out of sync
+    while (Serial1.available() > 0) {
+      memmove(&buffer2[0], &buffer2[1], 7);
+      buffer2[7] = (unsigned char) Serial1.read();
       if(memcmp("DEADBEEF",&buffer2[0],8) == 0) {
         state = 1;
         digitalWrite(LED, LOW);
+        break;
       }
     }
 

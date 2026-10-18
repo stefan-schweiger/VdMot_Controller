@@ -124,11 +124,15 @@ int16_t Terminal_Serve (void) {
     {    
         for (int c = 0; c < availcnt; c++)
         {           
-            *bufptr++ = (char) COMM_DBG.read();
-            buflen++;
+            char ch = (char) COMM_DBG.read();
+            // drop data that does not fit, the line end below terminates the overlong line
+            if (buflen<sizeof(buffer)-1) {
+                *bufptr++ = ch;
+                buflen++;
+            }
         }
-        if (buflen>=sizeof(buffer)) {
-            buffer[sizeof(buffer)-1] = '\r';
+        if (buflen>=sizeof(buffer)-1) {
+            buffer[buflen-1] = '\r';
         }
     }
 
