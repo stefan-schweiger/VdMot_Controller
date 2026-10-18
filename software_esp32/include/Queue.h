@@ -39,6 +39,7 @@
 
 
 #include "Arduino.h"
+#include <mutex>
 #include "TypedQueue.h"
 #include "globals.h"
 
@@ -48,6 +49,8 @@
 class CQueue {
   private:
    TypedQueue<String> m_queue;
+   // push is called by the web server and mqtt tasks, pop by the main loop
+   std::mutex m_mutex;
    bool m_enabled;
    String m_currentLine;
    byte m_bufferSize;

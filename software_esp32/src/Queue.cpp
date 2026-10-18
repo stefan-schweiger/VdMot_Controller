@@ -48,8 +48,9 @@ CQueue::CQueue(byte bufferSize) {
 }
 
 void CQueue::clear() {
-  while (available()) {
-    pop();
+  std::lock_guard<std::mutex> lock(m_mutex);
+  while (!m_queue.IsEmpty()) {
+    m_queue.Pop();
   }
 }
 
@@ -71,16 +72,20 @@ bool CQueue::isEnabled() {
 }
 
 void CQueue::push(String data) {
-  if (m_enabled && m_queue.Count() <= m_bufferSize) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (m_enabled && m_queue.Count() < m_bufferSize) {
     m_queue.Push(data);
   }
 }
 
 
 int CQueue::available()  {
+  std::lock_guard<std::mutex> lock(m_mutex);
   return m_queue.Count();
 }
 
 String CQueue::pop() {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (m_queue.IsEmpty()) return "";
   return m_queue.Pop();
 }
