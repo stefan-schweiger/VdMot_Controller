@@ -48,6 +48,15 @@
 
 CVdmConfig VdmConfig;
 
+// copies a json string into a fixed size char array, the result is always null terminated
+// values which are not a string (missing, null, numbers) are ignored
+template <typename T>
+static void copyJsonString(char* dest, size_t size, const T& value)
+{
+  const char* s = value.template as<const char*>();
+  if (s != nullptr) strlcpy(dest, s, size);
+}
+
 
 CVdmConfig::CVdmConfig()
 {
@@ -166,7 +175,7 @@ void CVdmConfig::clearConfig()
 
   configFlash.valvesConfig.dayOfCalib=9;
   configFlash.valvesConfig.hourOfCalib=0;
-  memset (configFlash.netConfig.pwd,0,sizeof(configFlash.netConfig.timeServer));
+  memset (configFlash.netConfig.timeServer,0,sizeof(configFlash.netConfig.timeServer));
   strncpy(configFlash.netConfig.timeServer,"pool.ntp.org",sizeof(configFlash.netConfig.timeServer));
   strncpy(configFlash.timeZoneConfig.tz,"Europe/Berlin",sizeof(configFlash.timeZoneConfig.tz));
   strncpy(configFlash.timeZoneConfig.tzCode,"CET-1CEST,M3.5.0,M10.5.0/3",sizeof(configFlash.timeZoneConfig.tzCode));
@@ -187,6 +196,8 @@ void CVdmConfig::clearConfig()
   memset(configFlash.messengerConfig.pushover.title,0,sizeof(configFlash.messengerConfig.pushover.title));
   memset(configFlash.messengerConfig.pushover.appToken,0,sizeof(configFlash.messengerConfig.pushover.appToken));
   memset(configFlash.messengerConfig.pushover.userToken,0,sizeof(configFlash.messengerConfig.pushover.userToken));
+  configFlash.messengerConfig.activeFlags.email=0;
+  memset(&configFlash.messengerConfig.email,0,sizeof(configFlash.messengerConfig.email));
 
   miscValues.lastCalib=0;
 
@@ -481,16 +492,16 @@ void CVdmConfig::postNetCfg (JsonObject doc)
   if (!doc["mask"].isNull()) configFlash.netConfig.mask=doc2IPAddress(doc["mask"]);
   if (!doc["gw"].isNull()) configFlash.netConfig.gateway=doc2IPAddress(doc["gw"]);
   if (!doc["dns"].isNull()) configFlash.netConfig.dnsIp=doc2IPAddress(doc["dns"]);
-  if (!doc["ssid"].isNull()) strncpy(configFlash.netConfig.ssid,doc["ssid"].as<const char*>(),sizeof(configFlash.netConfig.ssid));
-  if (!doc["pwd"].isNull()) strncpy(configFlash.netConfig.pwd,doc["pwd"].as<const char*>(),sizeof(configFlash.netConfig.pwd));
-  if (!doc["userName"].isNull()) strncpy(configFlash.netConfig.userName,doc["userName"].as<const char*>(),sizeof(configFlash.netConfig.userName));
-  if (!doc["userPwd"].isNull()) strncpy(configFlash.netConfig.userPwd,doc["userPwd"].as<const char*>(),sizeof(configFlash.netConfig.userPwd));
-  if (!doc["timeServer"].isNull()) strncpy(configFlash.netConfig.timeServer,doc["timeServer"].as<const char*>(),sizeof(configFlash.netConfig.timeServer));
+  copyJsonString(configFlash.netConfig.ssid,sizeof(configFlash.netConfig.ssid),doc["ssid"]);
+  copyJsonString(configFlash.netConfig.pwd,sizeof(configFlash.netConfig.pwd),doc["pwd"]);
+  copyJsonString(configFlash.netConfig.userName,sizeof(configFlash.netConfig.userName),doc["userName"]);
+  copyJsonString(configFlash.netConfig.userPwd,sizeof(configFlash.netConfig.userPwd),doc["userPwd"]);
+  copyJsonString(configFlash.netConfig.timeServer,sizeof(configFlash.netConfig.timeServer),doc["timeServer"]);
   if (!doc["syslogLevel"].isNull()) configFlash.netConfig.syslogLevel=doc["syslogLevel"];
   if (!doc["syslogIp"].isNull()) configFlash.netConfig.syslogIp=doc2IPAddress(doc["syslogIp"]);
   if (!doc["syslogPort"].isNull()) configFlash.netConfig.syslogPort=doc["syslogPort"];
-  if (!doc["tz"].isNull()) strncpy(configFlash.timeZoneConfig.tz,doc["tz"].as<const char*>(),sizeof(configFlash.timeZoneConfig.tz));
-  if (!doc["tzCode"].isNull()) strncpy(configFlash.timeZoneConfig.tzCode,doc["tzCode"].as<const char*>(),sizeof(configFlash.timeZoneConfig.tzCode));
+  copyJsonString(configFlash.timeZoneConfig.tz,sizeof(configFlash.timeZoneConfig.tz),doc["tz"]);
+  copyJsonString(configFlash.timeZoneConfig.tzCode,sizeof(configFlash.timeZoneConfig.tzCode),doc["tzCode"]);
 }
 
 void CVdmConfig::postSysLogCfg (JsonObject doc)
@@ -507,8 +518,8 @@ void CVdmConfig::postProtCfg (JsonObject doc)
   if (!doc["port"].isNull()) configFlash.protConfig.brokerPort = doc["port"];
   if (!doc["interval"].isNull()) configFlash.protConfig.brokerInterval = doc["interval"];
   if (!doc["publish"].isNull()) configFlash.protConfig.publishInterval = doc["publish"];
-  if (!doc["user"].isNull()) strncpy(configFlash.protConfig.userName,doc["user"].as<const char*>(),sizeof(configFlash.netConfig.userName));
-  if (!doc["pwd"].isNull()) strncpy(configFlash.protConfig.userPwd,doc["pwd"].as<const char*>(),sizeof(configFlash.netConfig.userPwd));
+  copyJsonString(configFlash.protConfig.userName,sizeof(configFlash.protConfig.userName),doc["user"]);
+  copyJsonString(configFlash.protConfig.userPwd,sizeof(configFlash.protConfig.userPwd),doc["pwd"]);
   if (!doc["pubSeparate"].isNull()) configFlash.protConfig.protocolFlags.publishSeparate = doc["pubSeparate"];
   if (!doc["pubAllTemps"].isNull()) configFlash.protConfig.protocolFlags.publishAllTemps = doc["pubAllTemps"];
   if (!doc["pubPathAsRoot"].isNull()) configFlash.protConfig.protocolFlags.publishPathAsRoot = doc["pubPathAsRoot"];
@@ -538,15 +549,22 @@ void CVdmConfig::postValvesCfg (JsonObject doc)
       idx=doc["valves"][i]["no"];
       idx--;
       if ((idx>=0) && (idx<12)) {
-          if (!doc["valves"][i]["name"].isNull()) strncpy(configFlash.valvesConfig.valveConfig[idx].name,doc["valves"][i]["name"].as<const char*>(),sizeof(configFlash.valvesConfig.valveConfig[idx].name));
+          copyJsonString(configFlash.valvesConfig.valveConfig[idx].name,sizeof(configFlash.valvesConfig.valveConfig[idx].name),doc["valves"][i]["name"]);
           if (!doc["valves"][i]["active"].isNull()) configFlash.valvesConfig.valveConfig[idx].active=doc["valves"][i]["active"];
+          // tIdx is 1 based, 0 = no sensor assigned
           if (!doc["valves"][i]["tIdx1"].isNull()) {
-            StmApp.actuators[idx].tIdx1=doc["valves"][i]["tIdx1"];
-            StmApp.setTempIdxActive=true;
+            uint8_t tIdx=doc["valves"][i]["tIdx1"];
+            if (tIdx<=TEMP_SENSORS_COUNT) {
+              StmApp.actuators[idx].tIdx1=tIdx;
+              StmApp.setTempIdxActive=true;
+            }
           }
           if (!doc["valves"][i]["tIdx2"].isNull()) {
-            StmApp.actuators[idx].tIdx2=doc["valves"][i]["tIdx2"];
-            StmApp.setTempIdxActive=true;
+            uint8_t tIdx=doc["valves"][i]["tIdx2"];
+            if (tIdx<=TEMP_SENSORS_COUNT) {
+              StmApp.actuators[idx].tIdx2=tIdx;
+              StmApp.setTempIdxActive=true;
+            }
           }
       }
      }
@@ -596,17 +614,17 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
   size_t size=doc["valves"].size();
 
   if (size==0) {
-      for (uint8_t i =0;i<12;i++) {
-        if (!doc["active"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.active=doc["active"];
-        if (!doc["allow"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].controlFlags.allow=doc["allow"]; 
-        if (!doc["window"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.windowInstalled=doc["window"];
-        if (!doc["vSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].valueSource=doc["vSource"];
-        if (!doc["tSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].targetSource=doc["tSource"];  
-        if (!doc["scheme"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].scheme=doc["scheme"];  
-        if (!doc["startAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].startActiveZone=doc["startAZ"];  
-        if (!doc["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].endActiveZone=doc["endAZ"]; 
-        if (!doc["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[idx].tTarget=doc["inittTarget"];
-        if (!doc["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[idx].deadband=doc["deadband"];  
+      for (uint8_t i =0;i<ACTUATOR_COUNT;i++) {
+        if (!doc["active"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].controlFlags.active=doc["active"];
+        if (!doc["allow"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].controlFlags.allow=doc["allow"];
+        if (!doc["window"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].controlFlags.windowInstalled=doc["window"];
+        if (!doc["vSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].valueSource=doc["vSource"];
+        if (!doc["tSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].targetSource=doc["tSource"];
+        if (!doc["scheme"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].scheme=doc["scheme"];
+        if (!doc["startAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].startActiveZone=doc["startAZ"];
+        if (!doc["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].endActiveZone=doc["endAZ"];
+        if (!doc["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[i].tTarget=doc["inittTarget"];
+        if (!doc["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[i].deadband=doc["deadband"];
       }
   } else {
     for (uint8_t i=0; i<size; i++) {
@@ -617,7 +635,11 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           if (!doc["valves"][i]["active"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.active=doc["valves"][i]["active"];
           if (!doc["valves"][i]["allow"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.allow=doc["valves"][i]["allow"];
           if (!doc["valves"][i]["window"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.windowInstalled=doc["valves"][i]["window"];
-          if (!doc["valves"][i]["link"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].link=doc["valves"][i]["link"];
+          if (!doc["valves"][i]["link"].isNull()) {
+            // link is 1 based, 0 = not linked
+            uint8_t link=doc["valves"][i]["link"];
+            if (link<=ACTUATOR_COUNT) configFlash.valvesControlConfig.valveControlConfig[idx].link=link;
+          }
           if (!doc["valves"][i]["vSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].valueSource=doc["valves"][i]["vSource"];
           if (!doc["valves"][i]["tSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].targetSource=doc["valves"][i]["tSource"];
           if (!doc["valves"][i]["xp"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].xp=doc["valves"][i]["xp"];
@@ -653,10 +675,13 @@ void CVdmConfig::postTempsCfg (JsonObject doc)
   uint8_t chunkStart=doc["chunkStart"];
   uint8_t chunkEnd=doc["chunkEnd"];
   uint8_t idx=0;
- 
+
+  // chunk indices are 1 based
+  if (chunkStart<1) return;
+  if (chunkEnd>TEMP_SENSORS_COUNT) chunkEnd=TEMP_SENSORS_COUNT;
   for (uint8_t i=chunkStart-1; i<chunkEnd; i++) {
-    if (!doc["temps"][idx]["name"].isNull()) strncpy(configFlash.tempsConfig.tempConfig[i].name,doc["temps"][idx]["name"].as<const char*>(),sizeof(configFlash.tempsConfig.tempConfig[i].name));
-    if (!doc["temps"][idx]["id"].isNull()) strncpy(configFlash.tempsConfig.tempConfig[i].ID,doc["temps"][idx]["id"].as<const char*>(),sizeof(configFlash.tempsConfig.tempConfig[i].ID));
+    copyJsonString(configFlash.tempsConfig.tempConfig[i].name,sizeof(configFlash.tempsConfig.tempConfig[i].name),doc["temps"][idx]["name"]);
+    copyJsonString(configFlash.tempsConfig.tempConfig[i].ID,sizeof(configFlash.tempsConfig.tempConfig[i].ID),doc["temps"][idx]["id"]);
     if (!doc["temps"][idx]["active"].isNull()) configFlash.tempsConfig.tempConfig[i].active=doc["temps"][idx]["active"];
     if (!doc["temps"][idx]["offset"].isNull()) configFlash.tempsConfig.tempConfig[i].offset=10*(doc["temps"][idx]["offset"].as<float>()) ;
     idx++;
@@ -665,14 +690,15 @@ void CVdmConfig::postTempsCfg (JsonObject doc)
 
 void CVdmConfig::postVoltsCfg (JsonObject doc)
 {
-  size_t size=doc["volts"].size(); 
+  size_t size=doc["volts"].size();
+  if (size>VOLT_SENSORS_COUNT) size=VOLT_SENSORS_COUNT;
   for (uint8_t i=0; i<size; i++) {
-    if (!doc["volts"][i]["name"].isNull()) strncpy(configFlash.voltsConfig.voltConfig[i].name,doc["volts"][i]["name"].as<const char*>(),sizeof(configFlash.voltsConfig.voltConfig[i].name));
-    if (!doc["volts"][i]["id"].isNull()) strncpy(configFlash.voltsConfig.voltConfig[i].ID,doc["volts"][i]["id"].as<const char*>(),sizeof(configFlash.voltsConfig.voltConfig[i].ID));
+    copyJsonString(configFlash.voltsConfig.voltConfig[i].name,sizeof(configFlash.voltsConfig.voltConfig[i].name),doc["volts"][i]["name"]);
+    copyJsonString(configFlash.voltsConfig.voltConfig[i].ID,sizeof(configFlash.voltsConfig.voltConfig[i].ID),doc["volts"][i]["id"]);
     if (!doc["volts"][i]["active"].isNull()) configFlash.voltsConfig.voltConfig[i].active=doc["volts"][i]["active"];
     if (!doc["volts"][i]["offset"].isNull()) configFlash.voltsConfig.voltConfig[i].offset=(doc["volts"][i]["offset"].as<float>()) ;
     if (!doc["volts"][i]["factor"].isNull()) configFlash.voltsConfig.voltConfig[i].factor=(doc["volts"][i]["factor"].as<float>()) ;
-    if (!doc["volts"][i]["unit"].isNull()) strncpy(configFlash.voltsConfig.voltConfig[i].unit,doc["volts"][i]["unit"].as<const char*>(),sizeof(configFlash.voltsConfig.voltConfig[i].unit));
+    copyJsonString(configFlash.voltsConfig.voltConfig[i].unit,sizeof(configFlash.voltsConfig.voltConfig[i].unit),doc["volts"][i]["unit"]);
   }
 }
 
@@ -680,7 +706,7 @@ void CVdmConfig::postVoltsCfg (JsonObject doc)
 void CVdmConfig::postSysCfg (JsonObject doc)
 {
   if (!doc["CF"].isNull()) configFlash.systemConfig.celsiusFahrenheit = doc["CF"];
-  if (!doc["station"].isNull()) strncpy(configFlash.systemConfig.stationName,doc["station"].as<const char*>(),sizeof(configFlash.systemConfig.stationName));
+  copyJsonString(configFlash.systemConfig.stationName,sizeof(configFlash.systemConfig.stationName),doc["station"]);
  
 }
 
@@ -696,17 +722,17 @@ void CVdmConfig::postMessengerCfg (JsonObject doc)
    if (!doc["reason"]["valveBlocked"].isNull()) configFlash.messengerConfig.reason.reasonFlags.valveBlocked=doc["reason"]["valveBlocked"];
 
   if (!doc["PO"]["active"].isNull()) configFlash.messengerConfig.activeFlags.pushOver=doc["PO"]["active"];
-  if (!doc["PO"]["appToken"].isNull()) strncpy(configFlash.messengerConfig.pushover.appToken,doc["PO"]["appToken"].as<const char*>(),sizeof(configFlash.messengerConfig.pushover.appToken));
-  if (!doc["PO"]["userToken"].isNull()) strncpy(configFlash.messengerConfig.pushover.userToken,doc["PO"]["userToken"].as<const char*>(),sizeof(configFlash.messengerConfig.pushover.userToken));
-  if (!doc["PO"]["title"].isNull()) strncpy(configFlash.messengerConfig.pushover.title,doc["PO"]["title"].as<const char*>(),sizeof(configFlash.messengerConfig.pushover.title));
+  copyJsonString(configFlash.messengerConfig.pushover.appToken,sizeof(configFlash.messengerConfig.pushover.appToken),doc["PO"]["appToken"]);
+  copyJsonString(configFlash.messengerConfig.pushover.userToken,sizeof(configFlash.messengerConfig.pushover.userToken),doc["PO"]["userToken"]);
+  copyJsonString(configFlash.messengerConfig.pushover.title,sizeof(configFlash.messengerConfig.pushover.title),doc["PO"]["title"]);
   
   if (!doc["Email"]["active"].isNull()) configFlash.messengerConfig.activeFlags.email=doc["Email"]["active"];
-  if (!doc["Email"]["user"].isNull()) strncpy(configFlash.messengerConfig.email.user,doc["Email"]["user"].as<const char*>(),sizeof(configFlash.messengerConfig.email.user));
-  if (!doc["Email"]["pwd"].isNull()) strncpy(configFlash.messengerConfig.email.pwd,doc["Email"]["pwd"].as<const char*>(),sizeof(configFlash.messengerConfig.email.pwd));
-  if (!doc["Email"]["host"].isNull()) strncpy(configFlash.messengerConfig.email.host,doc["Email"]["host"].as<const char*>(),sizeof(configFlash.messengerConfig.email.host));
+  copyJsonString(configFlash.messengerConfig.email.user,sizeof(configFlash.messengerConfig.email.user),doc["Email"]["user"]);
+  copyJsonString(configFlash.messengerConfig.email.pwd,sizeof(configFlash.messengerConfig.email.pwd),doc["Email"]["pwd"]);
+  copyJsonString(configFlash.messengerConfig.email.host,sizeof(configFlash.messengerConfig.email.host),doc["Email"]["host"]);
   if (!doc["Email"]["port"].isNull()) configFlash.messengerConfig.email.port=doc["Email"]["port"];
-  if (!doc["Email"]["recipient"].isNull()) strncpy(configFlash.messengerConfig.email.recipient,doc["Email"]["recipient"].as<const char*>(),sizeof(configFlash.messengerConfig.email.recipient));
-  if (!doc["Email"]["title"].isNull()) strncpy(configFlash.messengerConfig.email.title,doc["Email"]["title"].as<const char*>(),sizeof(configFlash.messengerConfig.email.title));
+  copyJsonString(configFlash.messengerConfig.email.recipient,sizeof(configFlash.messengerConfig.email.recipient),doc["Email"]["recipient"]);
+  copyJsonString(configFlash.messengerConfig.email.title,sizeof(configFlash.messengerConfig.email.title),doc["Email"]["title"]);
 }
 
 String CVdmConfig::handleAuth (JsonObject doc)
@@ -716,8 +742,8 @@ String CVdmConfig::handleAuth (JsonObject doc)
   uint8_t result=0;
   if ((strlen(configFlash.netConfig.userName)>0) && (strlen(configFlash.netConfig.userPwd)>0)) {
     if (!(doc["user"].isNull() || doc["pwd"].isNull())) {
-      const char* du=doc["user"].as<const char*>();
-      const char* dp=doc["pwd"].as<const char*>();
+      const char* du=doc["user"] | "";
+      const char* dp=doc["pwd"] | "";
       userCheck=(strncmp (configFlash.netConfig.userName,du,sizeof(configFlash.netConfig.userName)))==0;
       pwdCheck=(strncmp (configFlash.netConfig.userPwd,dp,sizeof(configFlash.netConfig.userPwd)))==0;
     }
