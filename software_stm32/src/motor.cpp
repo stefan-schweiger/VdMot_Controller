@@ -166,9 +166,10 @@ byte valve_setup () {
   //attachInterrupt(digitalPinToInterrupt(REVINPIN),isr_counter,RISING);
 
 
- if ((eep_content.currentbound_low_fac>=10) && (eep_content.currentbound_low_fac<=40))
+  // same limits as accepted by smotc
+ if ((eep_content.currentbound_low_fac>=5) && (eep_content.currentbound_low_fac<=50))
     currentbound_low_fac = eep_content.currentbound_low_fac;
-  if ((eep_content.currentbound_high_fac>=10) && (eep_content.currentbound_high_fac<=40))
+  if ((eep_content.currentbound_high_fac>=5) && (eep_content.currentbound_high_fac<=50))
     currentbound_high_fac = eep_content.currentbound_high_fac;
   if (eep_content.startOnPower<=100) startOnPower=eep_content.startOnPower; else startOnPower=30;
   #ifdef motDebug
@@ -182,6 +183,7 @@ byte valve_setup () {
   for (unsigned int x = 0;x<ACTUATOR_COUNT;x++) {
     myvalvemots[x].actual_position = startOnPower;
     myvalvemots[x].target_position = startOnPower;
+    myvalvemots[x].pending_target = VALVE_NO_PENDING_TARGET;
     myvalvemots[x].meancurrent = 20;       // 20 mA
     myvalvemots[x].scaler = 89;
     myvalvemots[x].calibRetries = 0;
@@ -523,16 +525,20 @@ void valve_loop () {
                       #endif
                       myvalvemots[valveindex].status = VLV_STATE_OPENCIR;
                       myvalvemots[valveindex].target_position = myvalvemots[valveindex].actual_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                       valvestate = A_IDLE;
                       isr_counter=0;
                     }
-                    else if (temp == M_RES_ERROR) {
+                    else if ((temp == M_RES_ERROR) || (temp == M_RES_STOP)) {
                       #ifdef motDebug
                         COMM_DBG.println("A: closing valve failed, timeout");
                       #endif
                       valvestate = A_IDLE;
                       myvalvemots[valveindex].status = VLV_STATE_FAILED;
                       myvalvemots[valveindex].actual_position = myvalvemots[valveindex].target_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                     }           
                   }               
                   break;
@@ -568,16 +574,20 @@ void valve_loop () {
                       #endif
                       myvalvemots[valveindex].status = VLV_STATE_OPENCIR;
                       myvalvemots[valveindex].target_position = myvalvemots[valveindex].actual_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                       valvestate = A_IDLE;
                       isr_counter=0;
                     }
-                    else if (temp == M_RES_ERROR) {
+                    else if ((temp == M_RES_ERROR) || (temp == M_RES_STOP)) {
                       #ifdef motDebug
                         COMM_DBG.println("A: opening valve failed, timeout");
                       #endif
                       valvestate = A_IDLE;
                       myvalvemots[valveindex].status = VLV_STATE_FAILED;
                       myvalvemots[valveindex].actual_position = myvalvemots[valveindex].target_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                     }                
                   }              
                   break;
@@ -650,18 +660,22 @@ void valve_loop () {
                       #endif
                       myvalvemots[valveindex].status = VLV_STATE_OPENCIR;
                       myvalvemots[valveindex].target_position = myvalvemots[valveindex].actual_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                                           
                       valveindex = 255;
                       valvestate = A_IDLE;
                       isr_counter=0;
                     }     
-                    else if (temp == M_RES_ERROR) {
+                    else if ((temp == M_RES_ERROR) || (temp == M_RES_STOP)) {
                       #ifdef motDebug
                         COMM_DBG.println("A: closing valve failed, timeout");
                       #endif
                       valvestate = A_IDLE;
                       myvalvemots[valveindex].status = VLV_STATE_FAILED;
                       myvalvemots[valveindex].actual_position = myvalvemots[valveindex].target_position;
+                      myvalvemots[valveindex].calibration = false;
+                      myvalvemots[valveindex].calibState=calibIdle;
                     }        
                   }           
                   break;
@@ -866,7 +880,7 @@ byte motorcycle (int mvalvenr, byte cmd) {
                     }
   
                     // correct motor nr?
-                    if (motorstate != M_IDLE && mvalvenr > (int) ACTUATOR_COUNT) {
+                    if (motorstate != M_IDLE && mvalvenr >= (int) ACTUATOR_COUNT) {
                       motorstate = M_IDLE;
                       result = M_RES_IDLE;
                     }
@@ -992,6 +1006,8 @@ byte motorcycle (int mvalvenr, byte cmd) {
 
                       // normal turning
                       else  {
+                        // undercurrent has to be detected continuously, short dips during a long stroke do not count
+                        undercurrcnt = 0;
                         normalcurrcnt++;
                         if(normalcurrcnt > TIMEOUT_NORMALCURRENT) {
                           #ifdef motDebug          

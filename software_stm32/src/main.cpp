@@ -180,7 +180,7 @@ void loop_system() {
   if ((millis()-loop_1000ms) > (uint32_t) 1000 ) {  
     loop_1000ms = millis();
 
-    if(time10s>=10) {
+    if(time10s>=9) {      // every 10th call of the 1000 ms loop
       time10s = 0;
       app_10s_loop();
       // todo sync with comm COMM_SER.println("STMalive ");   // send alive to ESP32
