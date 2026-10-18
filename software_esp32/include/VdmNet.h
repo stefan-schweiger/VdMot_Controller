@@ -40,8 +40,6 @@
 
 #pragma once
 
-#include <Pushover.h>
-
 
 #define USING_CORE_ESP32_CORE_V200_PLUS     true
 // Debug Level from 0 to 4

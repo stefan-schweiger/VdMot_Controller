@@ -40,6 +40,9 @@
 
 #pragma once
 
+// pushover support needs a TLS client, enable it with -DusePushover
+#ifdef usePushover
+
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -77,3 +80,5 @@ public:
 	void setToken(const char *);
 	int send(CPushoverMessage message);
 };
+
+#endif

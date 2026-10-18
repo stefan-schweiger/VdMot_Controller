@@ -39,8 +39,11 @@
 
 
 
+// pushover support needs a TLS client, enable it with -DusePushover
+#ifdef usePushover
+
 #include <Arduino.h>
-#include "Pushover.h"
+#include "PushOver.h"
 #include <map>
 #include "globals.h"
 #include "VdmTask.h"
@@ -179,3 +182,5 @@ void CPushover::setUser(const char *user)
 {
 	_user = user;
 }
+
+#endif

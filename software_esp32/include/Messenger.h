@@ -44,8 +44,11 @@
 #include <ArduinoJson.h>
 #include "VdmConfig.h"
 #include <Syslog.h>
-#include "Pushover.h"
-#include "ESP_Mail_Client.h"
+#include "PushOver.h"
+// email support needs the ESP Mail Client library, enable it with -DuseEmail
+#ifdef useEmail
+  #include "ESP_Mail_Client.h"
+#endif
 
 class CMessenger
 {
@@ -55,11 +58,17 @@ public:
   int sendPO(const char* appToken, const char* userToken ,const char* title, const char* message);
   int testPO(JsonObject doc);
   void sendEmail(const char* user, const char* pwd ,const char* host, uint16_t port,const char* recipient,const char* title,const char* thisMessage);
-  void testEmail(JsonObject doc); 
-  void mSMTCallback(SMTP_Status status);
-  
-  CPushover pushoverClient;
-  SMTPSession smtp;
+  void testEmail(JsonObject doc);
+  #ifdef useEmail
+    void mSMTCallback(SMTP_Status status);
+  #endif
+
+  #ifdef usePushover
+    CPushover pushoverClient;
+  #endif
+  #ifdef useEmail
+    SMTPSession smtp;
+  #endif
 
   String title;
   String message;

@@ -40,8 +40,10 @@
 
 #include "Messenger.h"
 #include <Arduino.h>
-#include "Pushover.h"
-#include "ESP_Mail_Client.h"
+#include "PushOver.h"
+#ifdef useEmail
+  #include "ESP_Mail_Client.h"
+#endif
 #include "globals.h"
 #include <string.h>
 
@@ -77,15 +79,19 @@ int CMessenger::testPO(JsonObject doc)
     char message [31] = {"Test from "};
     strlcat (message,VdmConfig.configFlash.systemConfig.stationName,sizeof(message)) ; 
 
-    if (!doc["appToken"].isNull()) strncpy(appToken,doc["appToken"].as<const char*>(),sizeof(appToken));
-    if (!doc["userToken"].isNull()) strncpy(userToken,doc["userToken"].as<const char*>(),sizeof(userToken));
-    if (!doc["title"].isNull()) strncpy(title,doc["title"].as<const char*>(),sizeof(title));
+    strlcpy(appToken,doc["appToken"] | "",sizeof(appToken));
+    strlcpy(userToken,doc["userToken"] | "",sizeof(userToken));
+    strlcpy(title,doc["title"] | "",sizeof(title));
 
     return (sendPO((const char*) &appToken,(const char*) &userToken,(const char*) &title,(const char*) &message));
 }
 
 int CMessenger::sendPO(const char* appToken, const char* userToken ,const char* title, const char* message)
 {
+  #ifndef usePushover
+    // built without pushover support, pushover settings are kept in the config but nothing is sent
+    return 0;
+  #else
     CPushoverMessage myMessage;
     pushoverClient.setToken(appToken);
     pushoverClient.setUser(userToken);
@@ -97,9 +103,19 @@ int CMessenger::sendPO(const char* appToken, const char* userToken ,const char* 
         UART_DBG.println("Pushover "+String(response));
     #endif
     return response;
+  #endif
 }
 
-void CMessenger::testEmail(JsonObject doc) 
+#ifndef useEmail
+
+// built without email support, email settings are kept in the config but nothing is sent
+void CMessenger::testEmail(JsonObject doc) {}
+
+void CMessenger::sendEmail (const char* user, const char* pwd ,const char* host, uint16_t port,const char* recipient,const char* title,const char* thisMessage) {}
+
+#else
+
+void CMessenger::testEmail(JsonObject doc)
 {
   char user [65]={0};
   char pwd [65]={0};
@@ -109,12 +125,12 @@ void CMessenger::testEmail(JsonObject doc)
   uint16_t port=465;
   char message [65] = {"Test from "};
   strlcat (message,VdmConfig.configFlash.systemConfig.stationName,sizeof(message)) ; 
-  if (!doc["user"].isNull()) strncpy(user,doc["user"].as<const char*>(),sizeof(user));
-  if (!doc["pwd"].isNull()) strncpy(pwd,doc["pwd"].as<const char*>(),sizeof(pwd));
-  if (!doc["host"].isNull()) strncpy(host,doc["host"].as<const char*>(),sizeof(host));
+  strlcpy(user,doc["user"] | "",sizeof(user));
+  strlcpy(pwd,doc["pwd"] | "",sizeof(pwd));
+  strlcpy(host,doc["host"] | "",sizeof(host));
   if (!doc["port"].isNull()) port = doc["port"];
-  if (!doc["recipient"].isNull()) strncpy(recipient,doc["recipient"].as<const char*>(),sizeof(recipient));
-  if (!doc["title"].isNull()) strncpy(title,doc["title"].as<const char*>(),sizeof(title));
+  strlcpy(recipient,doc["recipient"] | "",sizeof(recipient));
+  strlcpy(title,doc["title"] | "",sizeof(title));
   sendEmail (user,pwd,host,port,recipient,title,message);
 }
 
@@ -246,3 +262,5 @@ void smtpCallback(SMTP_Status status);
     ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
 }
+
+#endif
