@@ -30,7 +30,7 @@ FLOOR = 2.0          # floor thickness
 ROOF = 2.0           # lid top thickness
 GAP = 0.4            # clearance between board edge and wall
 SIDE_MARGIN = 9.0    # space left/right of the board for the lid screws and wall mounting holes
-STANDOFF = 4.0       # floor to board bottom, through hole pins stick out 1.9 mm
+STANDOFF = 5.0       # floor to board bottom, through hole pins of the 3D model stick out 1.9 mm, trim leads to <= 3 mm
 INNER_H = 27.0       # board top to the inside of the lid, the LAN jack is 25.6 mm high
 SPLIT = -0.5         # height of the joint between base and lid, relative to the board top
 CONN_CLEAR = 0.5     # clearance around connectors in the lid openings
@@ -57,11 +57,13 @@ CONNECTORS = [
     ("X11", "back",  140.31, 151.51, 0.0, 11.5, "11", True),
 ]
 
-# support posts below the board and clamp pins of the lid above it, at spots where the
-# board has no through hole pins (posts) and no components (clamps), taken from the 3D model
-POSTS = [(3, 19), (3, 45), (3, 80), (65, 24), (95, 32), (150, 22), (150, 52), (118, 83), (140, 40), (60, 72)]
+# support posts below the board and clamp pins of the lid above it, on the same spots, so the board
+# is held between them. Taken from the 3D model: the posts keep >= 1.9 mm to through hole pins and
+# parts below the board, the clamps >= 1.4 mm to components above it (bounding boxes)
+POSTS = [(3.0, 20.5), (3.0, 45.0), (3.0, 83.0), (59.5, 23.5), (101.75, 23.75),
+         (150.0, 24.75), (152.75, 46.25), (118.75, 83.0), (137.75, 43.25), (49.75, 71.5)]
 POST_R = 2.5
-CLAMPS = [(3, 19), (3, 45), (3, 81.75), (62.75, 24), (97.75, 33), (150, 22), (150, 50.75), (118, 83), (140, 40)]
+CLAMPS = POSTS
 CLAMP_R = 2.0
 CLAMP_GAP = 0.0      # gap between clamp pins and the board top, raise if the lid does not close
 

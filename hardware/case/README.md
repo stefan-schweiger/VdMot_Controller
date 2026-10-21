@@ -24,13 +24,18 @@ Print the fit check frame first.
 | `vdmot_case.step` | base and lid as STEP for other CAD programs |
 | `vdmot_case.py` | FreeCAD script that generates all of the above |
 
-Outer size 178.8 x 91.2 x 36.6 mm, the printer bed needs at least 180 mm.
+Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## How it works
 
-- The board is not screwed. It rests on 10 posts and is held down by 9 pins of the lid,
-  at places where the board has no through hole pins below and no components above.
-  The mounting holes of the board are not in the 3D model, so they are not used.
+- The board is not screwed. It rests on 10 posts and is held down by 10 pins of the lid on the
+  same spots, so it is clamped between them. The spots are free of through hole pins below
+  (at least 1.9 mm to the next pin or part) and of components above (at least 1.4 mm),
+  measured on the bounding boxes of the 3D model.
+- The posts do not line up with the mounting holes of the board: the holes are not in the
+  3D model, so they are not used.
+- Below the board there are 5 mm to the floor. The longest pins of the 3D model (valve jacks)
+  stick out 1.9 mm, so trim all leads you solder to 3 mm or less.
 - Small stops at the left and right board edges keep it from sliding sideways, the openings
   of the lid lock it once the lid is on.
 - All openings are open at the bottom edge of the lid, so it slides down over the connectors and
