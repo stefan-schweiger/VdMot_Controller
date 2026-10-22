@@ -6,6 +6,9 @@ Cross platform replacement for zz.sh + mktfs.exe: every file in ./h is
 gzipped and embedded as a C array, tfs_data[] lists them by name.
 
 usage: python3 mktfs.py   (run from software_esp32/web_pages_source)
+
+The css of index.html is generated with Tailwind, after changing classes run
+tailwind/build.py first (needs Node.js).
 """
 
 import gzip

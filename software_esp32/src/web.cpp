@@ -312,9 +312,20 @@ String CWeb::getSysInfo()
                   "\"stm32version\":\""+VdmSystem.stmVersion+stmBuild+"\","+
                   "\"stm32VFalse\":\""+VdmSystem.stmVersionFalse+"\","+
                   "\"stm32MinReq\":\""+minSTMRequired+"\","+
-                  "\"stm32ChipId\":\"0x"+String(VdmSystem.stmID,16)+" "+String(StmOta.checkChipName(VdmSystem.stmID))+"\""+
+                  "\"stm32ChipId\":\"0x"+String(VdmSystem.stmID,16)+" "+String(StmOta.checkChipName(VdmSystem.stmID))+"\","+
+                  // notifications compiled in (-DusePushover / -DuseEmail), the web ui hides the others
+                  #ifdef usePushover
+                    "\"msgPushover\":1,"+
+                  #else
+                    "\"msgPushover\":0,"+
+                  #endif
+                  #ifdef useEmail
+                    "\"msgEmail\":1"+
+                  #else
+                    "\"msgEmail\":0"+
+                  #endif
                   "}";
-  return result;  
+  return result;
 }
 
 String CWeb::getSysDynInfo()

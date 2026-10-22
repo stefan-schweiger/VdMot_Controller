@@ -5,1508 +5,566 @@
 <link rel="icon" href="../favicon.ico">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<title>VdMot Controller</title>
 <style>
-	body {
-	  font-family: sans-serif;
-	  margin:0;
-	}
-	/* Add a black background color to the top navigation */
-	.topNav {
-		background-color: #333;
-		overflow: hidden;
-	}
+/* tailwind:start */
+*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }
 
-	/* Style the links inside the navigation bar */
-	.topNav a {
-		float: left;
-		display: block;
-		color: #f2f2f2;
-		text-align: center;
-		padding: 14px 16px;
-		text-decoration: none;
-		font-size: 17px;
-	}
-
-	/* Change the color of links on hover */
-	.topNav a:hover {
-		background-color: #ddd;
-		color: black;
-	}
-
-	/* Hide the link that should open and close the topNav on small screens */
-	.topNav .icon {
-		display: none;
-	}
-
-	/* When the screen is less than 600 pixels wide, hide all links, except for the first one ("Home"). Show the link that contains should open and close the topNav (.icon) */
-	@media screen and (max-width: 600px) {
-	  .topNav a:not(:first-child) {display: none;}
-	  .topNav a.icon {
-		float: right;
-		display: block;
-	  }
-	}
-
-	/* The "responsive" class is added to the topNav with JavaScript when the user clicks on the icon. This class makes the topNav look good on small screens (display the links vertically instead of horizontally) */
-	@media screen and (max-width: 600px) {
-	  .topNav.responsive {position: relative;}
-	  .topNav.responsive a.icon {
-		position: absolute;
-		right: 0;
-		top: 0;
-	  }
-	  .topNav.responsive a {
-		float: none;
-		display: block;
-		text-align: left;
-	  }
-	}
-	
-	/* Style the tab content (and add height:100% for full page content) */
-	.tabContent {
-	  color: white;
-	  display: none;
-	  padding: 10px 20px;
-	  height:100%;
-	}
-	
-	/* Style tab links */
-	.tabLink {
-	  background-color: #555;
-	  color: white;
-	  float: left;
-	  border: none;
-	  outline: none;
-	  cursor: pointer;
-	  padding: 14px 16px;
-	  font-size: 17px;
-	  width: 12%;
-	}
-
-	.tabLink:hover {
-	  background-color: #777;
-	}
-
-	.tabLink:hover {
-	  background-color: #777;
-	}
-	
-	.tabframe {
-	  border: white 2px solid;
-	  padding: 5px;
-	  border-radius: 5px;
-	  text-align: center;
-	}
-	
-	.tabiframe {
-	  border-top: white 1px solid;
-	  padding: 5px;
-	  text-align: center;
-	}
-	.tabpframe {
-	  border-top: white 1px solid;
-	  padding: 5px;
-	  text-align: center;
-	}
-	
-	.form-input{
-		width: 100px;
-	}
-	.form-input1{
-		width: 300px;
-	}
-	.form-input2{
-		width: 300px;
-	}
-	form-input3{
-		width: 50px;
-		margin-left: 5px;
-	}
-	.rtabframe {
-		border: white 2px solid;
-		padding: 5px;
-		border-radius: 5px;
-		text-align: center;
-	}
-	.rtabframe2 {
-		border: white 2px solid;
-		padding: 5px;
-		border-radius: 5px;
-		text-align: center;
-		grid-column : span 2;
-	}
-	
-	.rtabframe3 {
-		border: white 2px solid;
-		padding: 5px;
-		border-radius: 5px;
-		text-align: center;
-		grid-column : span 3;
-	}
-
-	.rtabframe4 {
-		border: white 2px solid;
-		padding: 5px;
-		border-radius: 5px;
-		text-align: center;
-		grid-column : span 4;
-	}
-	
-	.alignTabCellCenter{
-	 float: center;
-	}
-	.alignTabCellLeft{
-	 float: left;
-	}
-
-	.alignTabCellState{
-	 float: center;
-	 padding-top: 10px;
-	}
-
-	.alignTabCellImgState{
-	 float: left;
-	 padding: 5px 2px;
-	}
-
-	table.tabTable {
-		width : 100%;
-	}
-
-	table.tabTable td {
-		padding-left: 5px;
-		height:21px;
-	}
-
-	table.tabTable1 {
-		width : 100%
-	}
-	
-	table.tabTable1 td {
-		padding-left: 5px;
-		height:21px;
-		text-align: center;
-		width : 200px;
-	}
-	
-	table.tabTable1 th {
-		padding-left: 5px;
-		height:21px;
-		text-align: center;
-		width : 140px;
-	}
-	
-	table.tabTableCtl {
-		width : 100%;
-  		align-items: center;
-		text-align: center;
-		align-content: center;
-	}
-
-	table.tabTableCtl td {
-		padding-left: 5px;
-		height:21px;
-		align-items: center;
-		text-align: center;
-		align-content: center;
-	}
-
-	table.tabTableCtl th {
-		padding-left: 5px;
-		height:21px;
-		align-items: center;
-		text-align: center;
-		align-content: center;
-	}
-
-	table.tabTableCtl tr:hover {
-		background-color: coral;
-	}
-	table.tabTableCtl tr:first-child:hover {
-		background-color: gray;
-	}
-
-	.hide {
-		display: none;
-	}
-	
-	.show {
-		display: block;
-		text-align: center;
-		padding-left: 5px;
-	}
-
-	.collapse {
-		visibility: collapse;
-	}
-	
-   .buttonclass:hover {
-		padding: 0.6em;
-		font-weight: bold;
-		background-color: #fff;
-		color: green;
-	}
-
-	.buttonclass {
-		font-weight: bold;
-		background-color: #79B935;
-		color: #fff;
-		margin: 2px;
-		padding: 0.6em;
-		border-radius: 5px;
-		outline-style: outset;
-		outline-width: thin;
-
-	}
-	.buttonclass:disabled {
-		font-weight: bold;
-		background-color: #79B900;
-		color: #c0c0c0;
-	}
-
-	.buttonclass1:hover {
-		padding: 0.6em;
-		font-weight: bold;
-		background-color: #fff;
-		color: green;
-	}
-
-	.buttonclass1 {
-		font-weight: bold;
-		background-color: #79B935;
-		color: #fff;
-		margin: 2px;
-		padding: 0.6em;
-		border-radius: 5px;
-		float: right;
-		outline-style: outset;
-		outline-width: thin;
-
-	}
-	.buttonclass1:disabled {
-		font-weight: bold;
-		background-color: #79B900;
-		color: #c0c0c0;
-	}
-	
-	.buttonDialogClass:hover {
-		padding: 0.6em;
-		font-weight: bold;
-		background-color: white;
-		color: #355fb9;
-	}
-
-	.buttonDialogClass {
-		font-weight: bold;
-		background-color: #355fb9;
-		color: #fff;
-		margin: 2px;
-		padding: 0.6em;
-		border-radius: 20px;
-		float: right;
-		outline-style: outset;
-
-	}
-	.buttonDialogClass:disabled {
-		font-weight: bold;
-		background-color: gray;
-		color: #c0c0c0;
-	}
-
-	.redButtonDialogClass:hover {
-		padding: 0.6em;
-		font-weight: bold;
-		background-color: white;
-		color: red;
-	}
-
-	.redButtonDialogClass {
-		font-weight: bold;
-		background-color: red;
-		color: #fff;
-		margin: 2px;
-		padding: 0.6em;
-		border-radius: 5px;
-		float: right;
-
-	}
-	.redButtonDialogClass:disabled {
-		font-weight: bold;
-		background-color: gray;
-		color: #c0c0c0;
-	}
-
-
-	.dialogClass{
-		width: 30em;
-		overflow-y: auto;
-		text-align: left;	
-		border: lightgray 5px solid;
-	}
-	.checkboxgroup{
-		width: 11em;
-		height : 12em;
-		overflow-y: auto;
-		text-align: left;
-	}
-	.checkboxgroup p{
-		width: 10em;
-		text-align: left;
-	}
-	.checkboxgroup label{
-		width: 10em;
-		float: left;
-	}
-
-	.checkboxgroup1{
-		width: 16em;
-		height : 12em;
-		overflow-y: auto;
-		text-align: left;
-	}
-	.checkboxgroup1 p{
-		width: 16em;
-		text-align: left;
-	}
-	.checkboxgroup1 label{
-		width: 16em;
-		float: left;
-	}
-
-	.checkboxgroup2{
-		width: 15em;
-		height : 12em;
-		overflow-y: auto;
-		text-align: left;
-	}
-	.checkboxgroup2 p{
-		width: 15em;
-		text-align: left;
-	}
-	.checkboxgroup2 label{
-		width: 15em;
-		float: left;
-	}
-
-	/* The Modal (background) */
-	.modal {
-	  display: none; /* Hidden by default */
-	  position: fixed; /* Stay in place */
-	  z-index: 1; /* Sit on top */
-	  padding-top: 100px; /* Location of the box */
-	  left: 0;
-	  top: 0;
-	  width: 100%; /*Full width */
-	  height: 100%; /*Full height */
-	  overflow: auto; /* Enable scroll if needed */
-	  background-color: rgb(0,0,0); /* Fallback color */
-	  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-	}
-
-	/* Modal Content */
-	.modal-content {
-	  background-color: #fefefe;
-	  margin: auto;
-	  padding: 20px;
-	  border: 1px solid #888;
-	  width: 400px;
-	}
-
-	/* The Close Button */
-	.close {
-	  color: #aaaaaa;
-	  float: right;
-	  font-size: 28px;
-	  font-weight: bold;
-	}
-
-	.close:hover,
-	.close:focus {
-	  color: #000;
-	  text-decoration: none;
-	  cursor: pointer;
-	}
-	
-   .container {  
-		display: grid;  
-		grid-gap: 2px;  
-		grid-template-columns: repeat(auto-fit, minmax(285px, 1fr)); 
-		grid-template-rows:  masonry;
-	}
-	
-	.container1 {  
-		display: grid;  
-		grid-gap: 2px;  
-		grid-template-columns: repeat(auto-fit, 350px);
-		grid-template-rows:  masonry;
-	}
-	
-	.container2 {  
-		display: grid;  
-		grid-gap: 2px;  
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-		grid-template-rows:  masonry;
-	}
-	
-	.container3 {  
-		display: grid;  
-		grid-gap: 2px;  
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		grid-template-rows:  masonry;
-	}
-		
-	div[disabled]
-	{
-		pointer-events: none;     
-		opacity: 0.4;
-	}
-
-	dialog {
-	    border: 0.125rem solid var(--border-color);
-	    border-radius: 20px;
-	    box-shadow:
-	        0 11px 15px -7px #0003,
-	        0 24px 38px 3px #00000024,
-	        0 9px 46px 8px #0000001f;
-	    font-size: 1rem;
-	   
-	}
-	
-	dialog::backdrop {
-	    background: rgba(36, 32, 20, 0.5);
-	    backdrop-filter: blur(0.25rem);
-	}
-
-	/* slider checkbox */ 
-	[type="checkbox"] {
-	--s:18px; /* adjust this to control the size*/
-	position: relative; 
-  	top: .3em;
-	height:var(--s);
-	aspect-ratio:2/1;
-	padding:calc(var(--s)/5);
-	border-radius:var(--s);
-	background:
-		radial-gradient(farthest-side,#fafafa 85%,#0005,#0000) left/var(--s) 100% no-repeat,
-		/*linear-gradient(90deg,#20b68f 50%,#939393 0) right/200% 100% content-box;*/
-		linear-gradient(90deg,#79B935 50%,#939393 0) right/200% 100% content-box;
-	transition:0.5s;
-	-webkit-appearance:none;
-	-moz-appearance:none;
-	appearance:none;
-	cursor:pointer;
-	}
-
-	[type="checkbox"]:checked {
-	background-position:right,left;
-	}
-
-	[type="text"],[type="number"],[type="password"] {
-	--s:15px; /* adjust this to control the size*/
-	/*height:var(--s);
-	aspect-ratio:2/1;
-	padding:calc(var(--s)/5);*/
-	border-radius:8px; 
-	background:
-		white;
-	-webkit-appearance:none;
-	-moz-appearance:none;
-	appearance:none;
-	cursor:pointer;
-	}
-
-	select,[type="button"] {
-		border-radius:8px;
-	}
-
-	body {
-	background:gray;
-	}
-
-	#Home {background-color: gray;}
-	#Status {background-color: gray;}
-	#Network {background-color: gray;}
-	#Config {background-color: gray;}
-	#Control {background-color: gray;}
-	#Update {background-color: gray;}
-	#About {background-color: gray;}
-
-	.spinner {
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		height:100px;
-		width:100px;
-		margin:0px auto;
-		-webkit-animation: rotation .6s infinite linear;
-		-moz-animation: rotation .6s infinite linear;
-		-o-animation: rotation .6s infinite linear;
-		animation: rotation .6s infinite linear;
-		border-left:10px solid rgba(0,174,239,.15);
-		border-right:10px solid rgba(0,174,239,.15);
-		border-bottom:10px solid rgba(0,174,239,.15);
-		border-top:10px solid rgba(0,174,239,.8);
-		border-radius:200%;
-	}
-
-	@-webkit-keyframes rotation {
-		from {-webkit-transform: rotate(0deg);}
-		to {-webkit-transform: rotate(359deg);}
-	}
-	@-moz-keyframes rotation {
-		from {-moz-transform: rotate(0deg);}
-		to {-moz-transform: rotate(359deg);}
-	}
-	@-o-keyframes rotation {
-		from {-o-transform: rotate(0deg);}
-		to {-o-transform: rotate(359deg);}
-	}
-	@keyframes rotation {
-		from {transform: rotate(0deg);}
-		to {transform: rotate(359deg);}
-	}
-
-details {
-  /*width: 80%;*/
-  margin: 0 auto ;
-  background: #807f7f;
-  margin-bottom: .5rem;
-  box-shadow: 0 .1rem 1rem -.5rem rgba(0,0,0,.4);
-  border-radius: 5px;
-  overflow: hidden;
-}
-
-summary {
-  padding: 0.4rem;
-  display: block;
-  background: #575656;
-  padding-left: 2.0rem;
-  position: relative;
-  cursor: pointer;
-  user-select: none;
-}
-
-summary:before {
-  content: '';
-  border-width: .4rem;
-  border-style: solid;
-  border-color: transparent transparent transparent #fff;
-  position: absolute;
-  top: 0.6rem;
-  left: 0.8rem;
-  transform: rotate(0);
-  transform-origin: .2rem 50%;
-  transition: .25s transform ease;
-}
-
-/* THE MAGIC 🧙‍♀️ */
-details[open] > summary:before {
-  transform: rotate(90deg);
-}
-
-
-details summary::-webkit-details-marker {
-  display:none;
-}
-
-details > ul {
-  padding-bottom: 1rem;
-  margin-bottom: 0;
-}
-
-
+/*! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}[hidden]{display:none!important}body{--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));font-size:.875rem;line-height:1.25rem;--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}input:where([type=text],[type=number],[type=password]),select{border-radius:.375rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.25rem .5rem;font-size:.875rem;line-height:1.25rem;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1));--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}input:where([type=text],[type=number],[type=password]):focus,select:focus{--tw-border-opacity:1;border-color:rgb(16 185 129/var(--tw-border-opacity,1));outline:2px solid transparent;outline-offset:2px;--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000);--tw-ring-color:rgba(16,185,129,.2)}input:where([type=text],[type=number],[type=password]):disabled,select:disabled{cursor:not-allowed;--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}input:where([readonly]){--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}select:where([size]){padding:.25rem}button,input:where([type=button]){cursor:pointer;border-radius:.375rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.25rem .5rem;font-size:.875rem;line-height:1.25rem;font-weight:500;--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1));--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}button:hover,input:where([type=button]):hover{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}button:disabled,input:where([type=button]):disabled{cursor:not-allowed;opacity:.5}input:where([type=checkbox]){height:1.25rem;width:2.25rem;flex-shrink:0;cursor:pointer;-webkit-appearance:none;-moz-appearance:none;appearance:none;border-radius:9999px;vertical-align:middle;transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}input:where([type=checkbox]):focus{outline:2px solid transparent;outline-offset:2px}input:where([type=checkbox]):focus-visible{--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000);--tw-ring-color:rgba(16,185,129,.4)}input:where([type=checkbox]):disabled{cursor:not-allowed;opacity:.5}input:where([type=checkbox]){background:#cbd5e1 radial-gradient(circle closest-side,#fff 80%,rgba(15,23,42,.15) 88%,transparent 100%) 0 /1.25rem 1.25rem no-repeat}input:where([type=checkbox]:checked){background-color:#10b981;background-position:100%}legend{float:left;width:100%}legend+*{clear:left}fieldset[disabled]{opacity:.6}summary{cursor:pointer;-webkit-user-select:none;-moz-user-select:none;user-select:none}.tabLink{display:flex;align-items:center;gap:.375rem;white-space:nowrap;border-bottom-width:2px;border-color:transparent;padding:1rem .75rem;font-weight:500;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.tabLink:hover{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.tabLink img{margin-left:.25rem;display:inline;height:1rem;width:1rem;vertical-align:-3px}.tabLink img[src=""]{display:none}.card{min-width:0;overflow:hidden;border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.card-h{flex-wrap:wrap;justify-content:space-between;border-bottom-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding:.75rem 1rem}.card-h,.card-h h2{display:flex;align-items:center;gap:.5rem}.card-h h2{font-weight:600;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.card-b{padding:1rem}.group-t{margin-bottom:.75rem;margin-top:2rem;font-size:.75rem;line-height:1rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.group-t:first-child{margin-top:0}.sub{margin-top:1rem;border-top-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding-top:1rem}.sub-t{margin-bottom:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:rgb(148 163 184/var(--tw-text-opacity,1))}.hint,.sub-t{font-size:.75rem;line-height:1rem;--tw-text-opacity:1}.hint{color:rgb(100 116 139/var(--tw-text-opacity,1))}.badge{border-radius:9999px;--tw-bg-opacity:1;background-color:rgb(241 245 249/var(--tw-bg-opacity,1));padding:.125rem .5rem;font-size:.75rem;line-height:1rem;font-weight:500;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.alert{border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(254 202 202/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(254 242 242/var(--tw-bg-opacity,1));padding:.75rem 1rem;--tw-text-opacity:1;color:rgb(153 27 27/var(--tw-text-opacity,1))}.kv>div{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;border-bottom-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding-top:.375rem;padding-bottom:.375rem}.kv>div:last-child{border-width:0}.kv dt{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.kv dd{text-align:right;font-weight:500;--tw-numeric-spacing:tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.kv+.kv{border-top-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.stat{border-radius:.75rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:.75rem 1rem;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.stat>div:first-child{font-size:.75rem;line-height:1rem;font-weight:500;text-transform:uppercase;letter-spacing:.05em;--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.stat>div:last-child{margin-top:.25rem;font-size:1rem;line-height:1.5rem;font-weight:600;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.field{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);align-items:center;gap:.75rem;padding-top:.25rem;padding-bottom:.25rem}.field>label,.field>span{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.field>input[type=number],.field>input[type=password],.field>input[type=text],.field>select{width:100%}.check{display:flex;align-items:center;gap:.625rem;padding-top:.25rem;padding-bottom:.25rem}.tip{margin-left:.25rem;display:inline-flex;height:1rem;width:1rem;cursor:help;align-items:center;justify-content:center;border-radius:9999px;--tw-bg-opacity:1;background-color:rgb(226 232 240/var(--tw-bg-opacity,1));vertical-align:middle;font-size:10px;font-weight:700;text-transform:none;--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.tip:hover{--tw-bg-opacity:1;background-color:rgb(209 250 229/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(6 95 70/var(--tw-text-opacity,1))}.tip:focus{outline:2px solid transparent;outline-offset:2px;--tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);--tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);box-shadow:var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow,0 0 #0000);--tw-ring-color:rgba(16,185,129,.4)}.check .tip{margin-left:-.375rem}#tipBox{pointer-events:none;position:fixed;z-index:50;max-width:20rem;border-radius:.5rem;--tw-bg-opacity:1;background-color:rgb(15 23 42/var(--tw-bg-opacity,1));padding:.5rem .75rem;font-size:.75rem;line-height:1rem;line-height:1.625;--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1));--tw-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color),0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.acc{margin-top:.75rem;border-radius:.5rem;border-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.acc summary{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;font-weight:500;--tw-text-opacity:1;color:rgb(30 41 59/var(--tw-text-opacity,1))}.acc summary::-webkit-details-marker{display:none}.acc summary:after{content:"";height:.5rem;width:.5rem;--tw-translate-y:-0.125rem;--tw-rotate:45deg;border-bottom-width:2px;border-right-width:2px;--tw-border-opacity:1;border-color:rgb(148 163 184/var(--tw-border-opacity,1));transition-property:transform;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.acc summary:after,.acc[open] summary:after{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.acc[open] summary:after{--tw-translate-y:0.125rem;--tw-rotate:-135deg}.acc-b{border-top-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding:.5rem .75rem}.btn,.btn-2,.btn-danger{display:inline-flex;align-items:center;justify-content:center;border-radius:.5rem;padding:.5rem .875rem;font-size:.875rem;line-height:1.25rem;font-weight:500;--tw-shadow:0 1px 2px 0 rgba(0,0,0,.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.btn{border-color:transparent;--tw-bg-opacity:1;background-color:rgb(5 150 105/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.btn:hover{--tw-bg-opacity:1;background-color:rgb(4 120 87/var(--tw-bg-opacity,1))}.btn-2{--tw-border-opacity:1;border-color:rgb(203 213 225/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}.btn-2:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.btn-danger{--tw-border-opacity:1;border-color:rgb(254 202 202/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.btn-danger:hover{--tw-bg-opacity:1;background-color:rgb(254 242 242/var(--tw-bg-opacity,1))}.tbl{width:100%;border-collapse:separate;--tw-border-spacing-x:0px;--tw-border-spacing-y:0px;border-spacing:var(--tw-border-spacing-x) var(--tw-border-spacing-y)}.tbl td{white-space:nowrap;border-bottom-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding:.375rem .5rem;text-align:center;--tw-numeric-spacing:tabular-nums;font-variant-numeric:var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction)}.tbl tr:first-child td{position:sticky;top:0;z-index:1;--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1));padding-top:.5rem;padding-bottom:.5rem;font-size:.75rem;line-height:1rem;font-weight:600;--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.tbl tr:not(:first-child):hover{--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1))}.tbl tr:last-child td{border-bottom-width:0}.tbl input[type=button],.tbl input[type=number],.tbl input[type=text],.tbl select{padding:.125rem .375rem}.tbl input[type=number]{-moz-appearance:textfield}.tbl input[type=number]::-webkit-inner-spin-button,.tbl input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.tbl p{margin:0}.savebar{position:sticky;bottom:0;z-index:20;margin-left:-1rem;margin-right:-1rem;margin-top:2rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;border-top-width:1px;--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1));background-color:hsla(0,0%,100%,.9);padding:.75rem 1rem;--tw-backdrop-blur:blur(8px)}.modal,.savebar{-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.modal{position:fixed;inset:0;z-index:50;display:none;overflow-y:auto;background-color:rgba(15,23,42,.4);padding-left:1rem;padding-right:1rem;padding-top:6rem;--tw-backdrop-blur:blur(4px)}.modal-content{margin-left:auto;margin-right:auto;max-width:28rem;border-radius:.75rem;--tw-bg-opacity:1;background-color:rgb(255 255 255/var(--tw-bg-opacity,1));padding:1.5rem;--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}.close{cursor:pointer;font-size:1.5rem;line-height:2rem;line-height:1;--tw-text-opacity:1;color:rgb(148 163 184/var(--tw-text-opacity,1))}.close:hover,dialog{--tw-text-opacity:1;color:rgb(51 65 85/var(--tw-text-opacity,1))}dialog{width:30rem;max-width:calc(100% - 2rem);border-radius:.75rem;padding:0;font-size:.875rem;line-height:1.25rem;--tw-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color),0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow,0 0 #0000),var(--tw-ring-shadow,0 0 #0000),var(--tw-shadow)}dialog::backdrop{background:rgba(15,23,42,.4);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}.dlg-h{border-bottom-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding:.75rem 1.25rem;font-weight:600;--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.dlg-b{padding:1rem 1.25rem}.dlg-f{display:flex;justify-content:flex-end;gap:.5rem;border-top-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(248 250 252/var(--tw-bg-opacity,1));padding:.75rem 1.25rem}.visible{visibility:visible}.static{position:static}.fixed{position:fixed}.sticky{position:sticky}.top-0{top:0}.z-30{z-index:30}.mx-auto{margin-left:auto;margin-right:auto}.-mb-px{margin-bottom:-1px}.mb-4{margin-bottom:1rem}.mt-1{margin-top:.25rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.table{display:table}.grid{display:grid}.hidden{display:none}.h-8{height:2rem}.max-h-\[30rem\]{max-height:30rem}.max-h-\[32rem\]{max-height:32rem}.w-20{width:5rem}.w-8{width:2rem}.w-full{width:100%}.max-w-3xl{max-width:48rem}.max-w-7xl{max-width:80rem}.flex-1{flex:1 1 0%}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-between{justify-content:space-between}.gap-1{gap:.25rem}.gap-2{gap:.5rem}.gap-2\.5{gap:.625rem}.gap-3{gap:.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-x-4{-moz-column-gap:1rem;column-gap:1rem}.gap-x-5{-moz-column-gap:1.25rem;column-gap:1.25rem}.gap-x-8{-moz-column-gap:2rem;column-gap:2rem}.gap-y-1{row-gap:.25rem}.gap-y-2{row-gap:.5rem}.space-y-3>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.75rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.75rem*var(--tw-space-y-reverse))}.space-y-4>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem*var(--tw-space-y-reverse))}.overflow-auto{overflow:auto}.overflow-x-auto{overflow-x:auto}.rounded{border-radius:.25rem}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240/var(--tw-border-opacity,1))}.bg-white\/95{background-color:hsla(0,0%,100%,.95)}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-4{padding-left:1rem;padding-right:1rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.text-base{font-size:1rem;line-height:1.5rem}.text-xs{font-size:.75rem;line-height:1rem}.font-semibold{font-weight:600}.leading-tight{line-height:1.25}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139/var(--tw-text-opacity,1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105/var(--tw-text-opacity,1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.tabContent{display:none;max-width:80rem;margin:0 auto;padding:1.5rem 1rem}.tabLink.active{--tw-border-opacity:1;border-color:rgb(5 150 105/var(--tw-border-opacity,1));--tw-text-opacity:1;color:rgb(4 120 87/var(--tw-text-opacity,1))}.hide{display:none}#cfgValvesControlTable td{padding-left:.2rem;padding-right:.2rem}#cfgValvesControlTable tr:first-child td{white-space:normal;line-height:1.6}#activeSetValves{margin-left:.4rem}.tabpframe{margin-top:.75rem;border-top-width:1px;--tw-border-opacity:1;border-color:rgb(241 245 249/var(--tw-border-opacity,1));padding-top:.75rem}.st-ok{background-color:rgb(209 250 229/var(--tw-bg-opacity,1));color:rgb(6 95 70/var(--tw-text-opacity,1))}.st-ok,.st-warn{--tw-bg-opacity:1;font-weight:600;--tw-text-opacity:1}.st-warn{background-color:rgb(254 243 199/var(--tw-bg-opacity,1));color:rgb(146 64 14/var(--tw-text-opacity,1))}.st-err{--tw-bg-opacity:1;background-color:rgb(254 226 226/var(--tw-bg-opacity,1));font-weight:600;--tw-text-opacity:1;color:rgb(185 28 28/var(--tw-text-opacity,1))}.invalid{--tw-border-opacity:1;border-color:rgb(248 113 113/var(--tw-border-opacity,1));--tw-bg-opacity:1;background-color:rgb(254 242 242/var(--tw-bg-opacity,1))}.alignTabCellImgState{height:22px;margin-right:6px}.alignTabCellImgState,.alignTabCellState{display:inline-block;vertical-align:middle}@keyframes vd-spin{to{transform:rotate(1turn)}}.spinner{position:fixed;z-index:60;left:calc(50% - 28px);top:calc(50% - 28px);width:56px;height:56px;border-radius:9999px;border:5px solid rgba(16,185,129,.2);border-top-color:#10b981;animation:vd-spin .7s linear infinite}#spinner-Config.spinner{position:static;width:auto;height:auto;border:1px solid #bae6fd;animation:none;display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;padding:.6rem 1rem;border-radius:.75rem;background:#f0f9ff;color:#075985}#spinner-Config.spinner:before{content:"";width:1rem;height:1rem;flex:none;border-radius:9999px;border:2px solid;border-top:2px solid transparent;animation:vd-spin .7s linear infinite}#spinner-Config.spinner:after{content:"Waiting for the STM32, valve and sensor settings are locked until it responds."}@media (min-width:640px){.sm\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.sm\:grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}}@media (min-width:768px){.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (min-width:1024px){.lg\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.lg\:grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* tailwind:end */
 </style>
-
 </head>
 <body>
 
-	<dialog id="pushOverParameterDialog" class="dialogClass">
-		<h3>PushOver</h3>
-		<table id="cfgPushOverParam" class="tabTable">
-		<tr>
-			<th>API Token</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="30" id="cfgPushOverAPIToken" name="cfgPushOverAPIToken"/>
-			</td>
-		</tr>
-		<tr>
-			<th>User Token</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="30" id="cfgPushOverUserToken" name="cfgPushOverUserToken"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Title</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="30" id="cfgPushOverTitle" name="cfgPushOverTitle"/>
-			</td>
-		</tr>
-		</table>
-
-		<footer>
-			<button id="test-pushOver" class="buttonDialogClass">test</button>
-			<button id="close-pushOverParameterDialog" class="buttonDialogClass">close</button>
-		</footer>
-		
+	<dialog id="pushOverParameterDialog">
+		<div class="dlg-h">Pushover</div>
+		<div class="dlg-b">
+			<div class="field"><label for="cfgPushOverAPIToken">API token</label><input type="text" maxlength="30" id="cfgPushOverAPIToken" name="cfgPushOverAPIToken"/></div>
+			<div class="field"><label for="cfgPushOverUserToken">User token</label><input type="text" maxlength="30" id="cfgPushOverUserToken" name="cfgPushOverUserToken"/></div>
+			<div class="field"><label for="cfgPushOverTitle">Title</label><input type="text" maxlength="30" id="cfgPushOverTitle" name="cfgPushOverTitle"/></div>
+		</div>
+		<div class="dlg-f">
+			<button id="test-pushOver" class="btn-2">Send test</button>
+			<button id="close-pushOverParameterDialog" class="btn">Close</button>
+		</div>
 	</dialog>
 
-	<dialog id="emailParameterDialog" class="dialogClass">
-		<h3>Email</h3>
-		<table id="cfgEmailParam" class="tabTable">
-		<tr>
-			<th>User</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="64" id="cfgEmailUser" name="cfgEmailUser"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Password</th>
-			<td>
-			<input type="password" class="form-input2" maxlength="64" id="cfgEmailPwd" name="cfgEmailPwd"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Host</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="64" id="cfgEmailHost" name="cfgEmailHost"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Port</th>
-			<td>
-			<input type="number" class="form-input2" id="cfgEmailPort" name="cfgEmailPort"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Recipient</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="64" id="cfgEmailRecipient" name="cfgEmailRecipient"/>
-			</td>
-		</tr>
-		<tr>
-			<th>Title</th>
-			<td>
-			<input type="text" class="form-input2" maxlength="30" id="cfgEmailTitle" name="cfgEmailTitle"/>
-			</td>
-		</tr>
-		</table>
-		<footer>
-			<button id="test-email" class="buttonDialogClass">test</button>
-			<button id="close-emailParameterDialog" class="buttonDialogClass">close</button>
-		</footer>
-	</dialog>
-	
-	<dialog id="haDialog" class="dialogClass">
-		<h3>Are you sure you want to discover Home Assistant ?</h3>
-		<table class="tabTable">
-			<tr>
-				<td>
-					<label><select id="HA_Action">
-						<option>Discovery only</option>
-						<option>Delete last discovery only</option>
-						<option>Delete last discovery and send new discovery</option>
-					</select> Action</label>
-				</td>
-			</tr>
-		</table>
-		<footer>
-			<button id="ha-Ok" class="buttonDialogClass" value="confirm">Ok</button>
-			<button id="ha-Cancel" class="buttonDialogClass" value="cancel">Cancel</button>
-		</footer>
+	<dialog id="emailParameterDialog">
+		<div class="dlg-h">Email</div>
+		<div class="dlg-b">
+			<div class="field"><label for="cfgEmailUser">User</label><input type="text" maxlength="64" id="cfgEmailUser" name="cfgEmailUser"/></div>
+			<div class="field"><label for="cfgEmailPwd">Password</label><input type="password" maxlength="64" id="cfgEmailPwd" name="cfgEmailPwd"/></div>
+			<div class="field"><label for="cfgEmailHost">Host</label><input type="text" maxlength="64" id="cfgEmailHost" name="cfgEmailHost"/></div>
+			<div class="field"><label for="cfgEmailPort">Port</label><input type="number" id="cfgEmailPort" name="cfgEmailPort"/></div>
+			<div class="field"><label for="cfgEmailRecipient">Recipient</label><input type="text" maxlength="64" id="cfgEmailRecipient" name="cfgEmailRecipient"/></div>
+			<div class="field"><label for="cfgEmailTitle">Title</label><input type="text" maxlength="30" id="cfgEmailTitle" name="cfgEmailTitle"/></div>
+		</div>
+		<div class="dlg-f">
+			<button id="test-email" class="btn-2">Send test</button>
+			<button id="close-emailParameterDialog" class="btn">Close</button>
+		</div>
 	</dialog>
 
-	<dialog id="enableStrictTopicsDialog" class="dialogClass">
-		<h3>It is mandatory to enable strict seperate topics while you select homeassistant</h3>
-		<table class="tabTable">
-			<th>Do you want to enable strict seperate topics now ?</th>
-			<td>
-				<button id="enableScrictTopics-Yes" class="buttonclass" value="yes">Yes</button>
-			</td>
-		</table>
-		<footer>
-			<button id="enableScrictTopics-Confirm" class="buttonDialogClass" value="confirm">Save</button>
-			<button id="enableScrictTopics-Cancel" class="buttonDialogClass" value="cancel">Cancel</button>
-		</footer>
+	<dialog id="haDialog">
+		<div class="dlg-h">Home Assistant discovery</div>
+		<div class="dlg-b">
+			<div class="field"><label for="HA_Action">Action</label>
+				<select id="HA_Action">
+					<option>Discovery only</option>
+					<option>Delete last discovery only</option>
+					<option>Delete last discovery and send new discovery</option>
+				</select>
+			</div>
+		</div>
+		<div class="dlg-f">
+			<button id="ha-Cancel" class="btn-2" value="cancel">Cancel</button>
+			<button id="ha-Ok" class="btn" value="confirm">Run</button>
+		</div>
 	</dialog>
 
+	<dialog id="enableStrictTopicsDialog">
+		<div class="dlg-h">Strict separate topics required</div>
+		<div class="dlg-b">
+			<p>Home Assistant needs <b>strict separate topics</b> for MQTT. Enable them now?</p>
+			<button id="enableScrictTopics-Yes" class="btn-2 mt-3" value="yes">Enable strict separate topics</button>
+		</div>
+		<div class="dlg-f">
+			<button id="enableScrictTopics-Cancel" class="btn-2" value="cancel">Cancel</button>
+			<button id="enableScrictTopics-Confirm" class="btn" value="confirm">Save</button>
+		</div>
+	</dialog>
 
-
-	<div class="topNav" id="mytopNav">
-	  <a href="#home" class="tabLink" id="defaultOpen" name="Home" onclick="openPage('Home', this, 'red')">Home<img id="homeImg" src="" style="margin-left:5px;height:16px;width:16px"></a>
-	  <a href="#status" class="tabLink" id="statusOpen" name="Status" style ="display:none"; onclick="openPage('Status', this, 'green');">Status<img id="statusImg" src="" style="margin-left:5px;height:16px;width:16px"></a>
-	  <a href="#network" class="tabLink" id="networkOpen" name="Network" style ="display:none" onclick="openPage('Network', this, 'blue')">Network</a>
-	  <a href="#config" class="tabLink" id="configOpen" name="Config" style ="display:none" onclick="openPage('Config', this, 'gray')">Config</a>
-	  <a href="#control" class="tabLink" id="controlOpen" name="Control" style ="display:none" onclick="openPage('Control', this, 'gray')">Control</a>
-	  <a href="#update" class="tabLink" id="updateOpen" name="Update" style ="display:none" onclick="openPage('Update', this, 'cyan')">Update</a>
-	  <a href="#about" class="tabLink" id="aboutOpen" name="About" onclick="openPage('About', this, 'darkgray')">About</a>
-	  <a href="javascript:void(0);" class="icon" onclick="resptopNav()">&#9776;</a>
-	</div>
+	<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+		<div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 px-4">
+			<div class="flex items-center gap-2.5 py-3">
+				<svg class="h-8 w-8" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#059669"/><path d="M8 21c2-2 4 2 6 0s4 2 6 0 4 2 4 2M8 15c2-2 4 2 6 0s4 2 6 0 4 2 4 2M8 9c2-2 4 2 6 0s4 2 6 0 4 2 4 2" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+				<div class="leading-tight">
+					<div class="font-semibold text-slate-900">VdMot Controller</div>
+					<div id="sysStation" class="text-xs text-slate-500"></div>
+				</div>
+			</div>
+			<nav id="mytopNav" class="-mb-px flex flex-1 gap-1 overflow-x-auto">
+				<a href="#home" class="tabLink" id="defaultOpen" name="Home" onclick="openPage('Home', this)">Overview<img id="homeImg" src="" alt=""></a>
+				<a href="#status" class="tabLink" id="statusOpen" name="Status" style="display:none" onclick="openPage('Status', this)">Status<img id="statusImg" src="" alt=""></a>
+				<a href="#config" class="tabLink" id="configOpen" name="Config" style="display:none" onclick="openPage('Config', this)">Settings</a>
+				<a href="#control" class="tabLink" id="controlOpen" name="Control" style="display:none" onclick="openPage('Control', this)">Control</a>
+				<a href="#update" class="tabLink" id="updateOpen" name="Update" style="display:none" onclick="openPage('Update', this)">Update</a>
+				<a href="#about" class="tabLink" id="aboutOpen" name="About" onclick="openPage('About', this)">About</a>
+			</nav>
+		</div>
+	</header>
 
 	<div id="spinner"></div>
 
+	<!-- Overview -->
 	<div id="Home" class="tabContent">
-	<div class="container1">
-		<div class="rtabframe">
-		<h3>VDMot Controller</h3>
-		<table id="homeInfo" class="tabTable">
-			<tr>
-				<th>Station</th>
-				<td id="sysStation"></td>
-			</tr>
-			<tr>
-				<th>Time</th>
-				<td id="locTime"></td>
-			</tr>
-			<tr>
-				<th>Up Time</th>
-				<td id="upTime"></td>
-			</tr>
-		</table>
+		<div id="sysSTM32-Error" class="alert mb-4" hidden><b>STM32 error</b> <span id="sysSTM32-ErrorText"></span></div>
+		<div id="sysSTM32-Info" class="alert mb-4" hidden><b>STM32</b> <span id="sysSTM32-InfoText"></span></div>
 
-		<div id="login-div" class="tabiframe" style ="display:none"> 
-			<table class="tabTable">
-				<tr>
-					<td>
-						<input type="button" class="buttonclass" id="login-button"  value="Login" title="Login" />
-						<input type="button" class="buttonclass" id="logout-button" value="Logout" title="Logout" />
-					</td>
-				</tr>
-			</table>
-			</div>
-		</div>
-
-		<div class="rtabframe">
-		<h3>WT32 Controller</h3>
-		<table id="homeInfoWT32" class="tabTable">
-			<tr>
-				<th width=100>SW Version</th>
-				<td id="sysWt32-Version"></td>
-			</tr>
-			<tr>
-				<th>Model</th>
-				<td id="wt32-ChipModel"></td>
-			</tr>
-			<tr>
-				<th>Cores</th>
-				<td id="wt32-ChipCores"></td>
-			</tr>
-			<tr>
-				<th>Version</th>
-				<td id="wt32-ChipVersion"></td>
-			</tr>
-			<tr>
-				<th>Flash size used</th>
-				<td id="wt32-Sketch"></td>
-				<td width=50 id="wt32-FlashUsed" ></td>
-			</tr>
-			<tr>
-				<th>Stack size</th>
-				<td id="wt32-ChipStack"></td>
-			</tr>
-			<tr>
-				<th>Heap/Min</th>
-				<td id="heap"></td>
-				<td width=70 id="min-heap"></td>
-			</tr>	
-			<tr id="tr-rssi">
-				<th>RSSI</th>
-				<td id="rssi"></td>
-			</tr>
-		</table>
-		</div>
-		<div class="rtabframe">
-		<h3>STM32 Controller</h3>
-		<table id="homeInfoSTM32" class="tabTable">
-			<tr>
-				<th>Version</th>
-				<td id="sysSTM32-Version"></td>
-			</tr>
-			<tr>
-				<th>Chip Id</th>
-				<td id="sysSTM32-ChipId"></td>
-			</tr>
-			<tr id="sysSTM32-Info" style="visibility:hidden">
-				<th>Info</th>
-				<td id="sysSTM32-InfoText"></td>
-			</tr>
-			<tr id="sysSTM32-Error" style="visibility:hidden">
-				<th>Error</th>
-				<td id="sysSTM32-ErrorText"></td>
-			</tr>
-		</table>
-		</div>
-	</div>
-	</div>
-	
-	<div id="Status" class="tabContent">
-	<div class="container3">
-		<div id="divValvesTable" class="rtabframe3">  
-		<h3>Valves</h3>	
-		<table id="valvesTable" class="tabTableCtl" border="3" frame="box" style="text-align:center">
-		</table>
-		</div>
-		<div class="rtabframe" style="overflow-y:auto" id="addStatusTabFrame">  
-			<h3>Miscellaneous</h3>
-			<table id="miscStatus" class="tabTable1">
-				<tr>
-					<th>Heat Control</th>
-					<td id="miscStatusHC"></td>
-				</tr>
-				<tr>
-					<th>Last Calibration</th>
-					<td id="miscStatusLC"></td>
-				</tr>
-				<tr>
-					<th>Show status detailed</th>
-					<td>
-					<input type="checkbox" id="status-detailed" name="status-detailed" title="Show detailed status"/>
-					</td>
-				</tr>
-			</table>
-		</div>
-		<div class="rtabframe" style="overflow-y:auto" id="tempStatusTabFrame">  
-		<h3>Temperature</h3>
-		<table id="tempsTable" class="tabTableCtl" border="3" frame="box" style="text-align:center">
-		</table>
-		</div>
-		<div class="rtabframe" style="overflow-y:auto" id="voltStatusTabFrame">  
-			<h3>Sensors</h3>
-			<table id="voltsTable" class="tabTableCtl" border="3" frame="box" style="text-align:center">
-			</table>
-		</div>
-	</div>
-	</div>
-	
-	<div id="Network" class="tabContent">
-		<div class="tabframe" style="width: 300px;"> 
-		<h3>Network</h3>
-		<table id="netInfo" class="tabTable1">
-			<tr>
-				<th>Eth/Wifi</th>
-				<td id="net-EthWifi"></td>
-			</tr>
-			<tr>
-				<th>DHCP</th>
-				<td id="net-dhcp"></td>
-			</tr>
-			<tr>
-				<th>IP</th>
-				<td id="net-ip"></td>
-			</tr>
-			<tr>
-				<th>MAC</th>
-				<td id="net-MAC"></td>
-			</tr>
-			<tr>
-				<th>Subnet Mask</th>
-				<td id="net-mask"></td>
-			</tr>
-			<tr>
-				<th>Gateway</th>
-				<td id="net-gw"></td>
-			</tr>
-			<tr>
-				<th>DNS</th>
-				<td id="net-dns"></td>
-			</tr>
-			</table>
-			<table id="net-broker" class="tabTable1" style="display:none">
-			<tr>
-				<th>MQTT</th>
-				<td id="net-broker-status"></td>
-			</tr>
-			<tr>
-				<th>SNTP</th>
-				<td id="net-sntp-status"></td>
-			</tr>
-			
-		</table>
-		</div>
-	</div>
-	
-	<div id="Config" class="tabContent">
-	<div id="spinner-Config"></div>
-	<div class="container">
-		<div class="rtabframe">
-		<h3>Network</h3>
-		<table id="netConfig" class="tabTable1">
-			<tr>
-				<th>Station</th>
-				<td>
-				<input type="text" maxlength="20" class="form-input" id="sysCfg-StationName" name="sysCfg-StationName" />
-				</td>
-			</tr>
-			<tr>
-				<th>User name</th>
-				<td>
-				<input type="text" maxlength="64" class="form-input" id="netcfg-UserName" name="netcfg-UserName" />
-				</td>
-			</tr>
-			<tr>
-				<th>User password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="netcfg-UserPwd" name="netcfg-UserPwd"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Re-type user password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="netcfg-UserPwd2" name="netcfg-UserPwd2"/>
-				</td>
-			</tr>
-			<tr>
-				<th>DHCP</th>
-				<td>
-				<select id="netcfg-dhcp" style="width: 60px;">
-                    <option>OFF</option>
-                    <option>ON</option>
-				</select>
-				</td>
-            </tr>  
-			<table id="netcfg-Tdhcp" style="display:none;" class="tabTable1">                 
-				<tr>
-					<th>IP</th>
-					<td>
-					<input type="text" class="form-input" id="netcfg-ip" name="netcfg-ip" placeholder="xxx.xxx.xxx.xxx"/>
-					</td>
-				</tr>
-				<tr>
-					<th>Subnet Mask</th>
-					<td>
-					<input type="text" class="form-input" id="netcfg-mask" name="netcfg-mask" placeholder="xxx.xxx.xxx.xxx"/>
-					</td>
-				</tr>
-				<tr>
-					<th>Gateway</th>
-					<td>
-					<input type="text" class="form-input" id="netcfg-gw" name="netcfg-gw" placeholder="xxx.xxx.xxx.xxx"/>
-					</td>
-				</tr>
-				<tr>
-					<th>DNS</th>
-					<td>
-					<input type="text" class="form-input" id="netcfg-dns" name="netcfg-dns" placeholder="xxx.xxx.xxx.xxx"/>
-					</td>
-				</tr>
-			</table> 
-			<table class="tabTable1"> 
-				<tr> 
-					<th>Eth/Wifi</th>
-					<td>
-					<select id="netcfg-EthWifi" style="width: 60px;">
-						<option>Auto</option>
-						<option>Eth</option>
-						<option>Wifi</option>
-					</select>
-					</td>
-				</tr>  
-			</table>
-		</table>
-		
-		<table id="netcfg-wifi" style="display:none;" class="tabTable1">
-				<tr>
-				<th>Wifi SSID</th>
-				<td>
-				<input type="text" maxlength="64" class="form-input" id="netcfg-WifiSSID" name="netcfg-WifiSSID" />
-				</td>
-			</tr>
-			<tr>
-				<th>Wifi password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="netcfg-WifiPwd" name="netcfg-WifiPwd"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Re-type wifi password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="netcfg-WifiPwd2" name="netcfg-WifiPwd2"/>
-				</td>
-			</tr>
-		</table>
-		<tr><th></th></tr>
-		
-		<div class="tabiframe"> 
-		<table id="netcfg-time" class="tabTable1">
-			
-			<tr><th>Time server</th></tr>
-			<tr>
-				<th>Name</th>
-				<td>
-				<input type="text" maxlength="64" class="form-input" id="netcfg-TimeServer" name="netcfg-TimeServer" />
-				</td>
-			</tr>
-			<tr>
-				<th>Time zone</th>
-				<td>
-					<select id="netcfg-tz" style="width: 200px;" onchange="getTZCode()"> </select>
-				</td>
-			</tr>
-			<tr>
-				<th>Time zone code</th>
-				<td id="netcfg-tzCode" style="font-size:small"></td>
-			</tr>
-		</table>
-		</div>
-		
-		<div class="tabiframe"> 
-		<table id="netcfg-syslog" class="tabTable1">		
-			<tr>
-				<th>Syslog server</th>
-				<td>
-				<select id="netcfg-syslog-select">
-                    <option>Off</option>
-                    <option>Small</option>
-					<option>Detail</option>
-                    <option>Atomic</option>
-				</select>
-				</td>
-            </tr> 
-		</table>
-		<table id="netcfg-syslog-table" style="display:none;" class="tabTable1">
-				<tr>
-				<th>Client IP</th>
-				<td>
-				<input type="text" class="form-input" id="netcfg-syslog-ip" name="netcfg-syslog-ip" placeholder="xxx.xxx.xxx.xxx"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Port</th>
-				<td>
-				<input type="text" class="form-input" id="netcfg-syslog-port" name="netcfg-syslog-port" placeholder="xxxx"/>
-				</td>
-			</tr>
-		</table>
-		<table class="tabTable">
-			<tr>
-			<td>
-			<input type="button" class="buttonclass" id="setSysLog" value="Set" title="Set syslog server values" />
-			</td>
-			</tr>
-		</table>
-		</div>
-		</div>
-
-		<div class="rtabframe" >
-		<h3>Protocol</h3>
-
-		<table id="protConfig" class="tabTable1">		
-			<tr>
-				<th>Data protocol</th>
-				<td>
-				<select id="protcfg-dataProt">
-                    <option>none</option>
-                    <option>MQTT</option>
-					<option>MQTT HA</option>
-				</select>
-				</td>
-            </tr> 
-		</table>
-		<table id="protcfg-Broker" style="display:none;" class="tabTable1">
-			<tr>
-				<th>Broker IP</th>
-				<td>
-				<input type="text" class="form-input" id="protcfg-Ip" name="protcfg-Ip" placeholder="xxx.xxx.xxx.xxx"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Broker Port</th>
-				<td>
-				<input type="text" class="form-input" id="protcfg-Port" name="protcfg-Port" placeholder="xxxxx"/>
-				</td>
-			</tr>
-			<tr>
-				<th>User name</th>
-				<td>
-				<input type="text" class="form-input" id="protcfg-User" name="protcfg-User"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="protcfg-Pwd" name="protcfg-Pwd"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Re-type password</th>
-				<td>
-				<input type="password" maxlength="64" class="form-input" id="protcfg-Pwd2" name="protcfg-Pwd2"/>
-				</td>
-			</tr>
-		</table>
-		<div id="div-protcfg-Broker3" class="tabpframe"> 	
-		<table id="protcfg-Broker3" style="display:none;" class="tabTable1">
-			<tr>
-				<th>Interval (ms)</th>
-				<td>
-				<input type="number" class="form-input" min="100" id="protcfg-Interval" name="protcfg-Interval" title="Polling interval in ms (default 1000). This polls the mqtt connection for events coming from broker"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Publish Interval (s)</th>
-				<td>
-				<input type="number" class="form-input" min="2" id="protcfg-Publish" name="protcfg-Publish" title="If Publish on change is not checked, it defines the publish interval of all values in seconds (default 10), otherwise it defines the time out to publish the values even the value was not changed."/>
-				</td>
-			</tr>
-			<tr>
-				<th>Publish on change</th>
-				<td>
-				<input type="checkbox" id="protcfg-pubOnChange" name="protcfg-pubOnChange" title="Publish values if changed or time out (defined in Publish interval, individually for each valve and temperature sensor)"/>
-				</td>
-			</tr>
-			<tr id="tr-minPubTime">
-				<th>Min time for next publish (s)</th>
-				<td>
-				<input type="number" class="form-input" min="2" id="protcfg-pubMinDelay" name="protcfg-pubMinDelay" title="Minimum time (in seconds) the system wait for the next publishing values, individually for each valve and temperature sensor"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Keep alive time (s)</th>
-				<td>
-				<input type="number" class="form-input" min="100" id="protcfg-keepAliveTime" name="protcfg-keepAliveTime" title="After this time the connection will be closed if there is no traffic"/>
-				</td>
-			</tr>
-		</table>
-		</div>
-		<div class="tabpframe"> 
-		<table id="protcfg-Broker1" style="display:none;" class="tabTable1">			  
-			<tr>
-				<details id="protcfg-BrokerDPublish">
-				<summary>Publish</summary>
-				<fieldset id="protcfg-Broker2" class="checkboxgroup2" style="height:14em;">
-					<label><input type="checkbox" id="protcfg-pubRetained" name="theGroupP" title="Publish values retained">Retained </label>
-					<label><input type="checkbox" id="protcfg-pubPlainText" name="theGroupP" title="Publish values as plaintext instead 0/1">Plaintext </label>
-					<label><input type="checkbox" id="protcfg-pubSeparate" name="theGroupP" title="Handle topics strict separate for write and read. Topics sent from server has to be added a /set">Strict separate topics </label>
-					<label><input type="checkbox" id="protcfg-pubAllTemps" name="theGroupP">All temps </label>
-					<label><input type="checkbox" id="protcfg-pubPathAsRoot" name="theGroupP">Path as root </label>
-					<label><input type="checkbox" id="protcfg-pubUpTime" name="theGroupP">Up time </label>
-					<label><input type="checkbox" id="protcfg-pubDiag" name="theGroupP">Diag </label>
-					<label><select id="protcfg-numFormat" name="theGroupP" style="width:100px" title="Handle decimal point as international (.) or like german (,)">
-						<option>International</option>
-						<option>German</option>
-					</select>Numeric format</label>
-				</fieldset>
-				</details>
-			</tr>
-			<tr>
-				<details id="protcfg-BrokerDFailed">
-				<summary>Failure Handling</summary>
-				<fieldset id="protcfg-Broker21" class="checkboxgroup2" style="height:5em;">
-					<label><input type="checkbox" id="protcfg-timeOutDSActive" name="theGroupP21" title="Time out for DS18 sensor (fixed 5 min)">DS18 </label>
-					<label><input type="checkbox" id="protcfg-timeOutTSActive" name="theGroupP21" title="If there is no tValue received via mqtt after this time the corresponding valve goes to the defined position.
-Caution : If this option is activated it is absolutely mandatory to ensure that the tValue is received within the time frame. 
-Publish on change on server side is not recommended with this option">tValue after<input type="number" class="form-input3" maxlength="4" style="width:3em;" min="10" id="protcfg-timeOutValue" name="protcfg-timeOutValue" />min</label>
-					<label><input type="number" class="form-input" min="0" max="100" maxlength="3" style="width:40px" id="protcfg-timeOutPosition" name="protcfg-timeOutPosition" title="Valve position after time out."/>Valve position </label>
-				</fieldset>
-				</details>
-			</tr>
-			<tr>
-				<details id="protcfg-BrokerDHA">
-				<summary>Home Assistant</summary>
-					<input type="button" class="buttonclass" id="protcfg-discoverHA" name="theGroupP22" value="Discovery" title="Discovery Home Assistant">
-				</details>
-			</tr>
-		</table>
-		</div>
-		</div>
-
-		<div class="rtabframe">
-		<h3>Valves</h3>
-		<table id="cfgValvesTable" class="tabTableCtl" border="3" frame="box" style="text-align:center;">
-		
-		</table>
-		<table class="tabTable">
-			<tr>
-			<td>
-			<input type="button" class="buttonclass" id="valvesDetect" value="Scan" title="Detect valves" />
-			</td>
-			</tr>
-		</table>
-		</div>
-		
-		<div class="rtabframe" id ="motorTabFrame">
-			<h3>Motor</h3>
-		
-			<table id="cfgValvesTable1" class="tabTable">
-			<tr>
-			<fieldset class="checkboxgroup2" style="height:17em;" id="cfgValvesTableFieldSet1">
-				<legend>Next Calibration</legend>
-				<label><input type="number" min="50" maxlength="4" style="width:60px" id="vCfg-movCalib" name="vCfg-movCalib" title="Number of movements to next calibration"> Movements </label>
-				<div id="calibDate"> 
-					<label><input type="number" max="24" min="0" maxlength="2" style="width:60px" id="vCfg-hCalib" name="vCfg-hCalib" title="Hour time of next calibration"> Hour time</label>
-					<label><input type="checkbox" id="vCfg-d0" name="theGroup">Sunday </label>
-					<label><input type="checkbox" id="vCfg-d1" name="theGroup">Monday </label>
-					<label><input type="checkbox" id="vCfg-d2" name="theGroup">Tuesday </label>
-					<label><input type="checkbox" id="vCfg-d3" name="theGroup">Wednesday </label>
-					<label><input type="checkbox" id="vCfg-d4" name="theGroup">Thursday </label>
-					<label><input type="checkbox" id="vCfg-d5" name="theGroup">Friday </label>
-					<label><input type="checkbox" id="vCfg-d6" name="theGroup">Saturday </label>
+		<div class="grid items-start gap-4 md:grid-cols-2">
+			<div class="space-y-4">
+			<section class="card">
+				<div class="card-h"><h2>Controller</h2></div>
+				<div class="card-b">
+					<dl class="kv">
+						<div><dt>Time</dt><dd id="locTime"></dd></div>
+						<div><dt>Up time</dt><dd id="upTime"></dd></div>
+					</dl>
+					<div id="login-div" class="mt-4 flex gap-2" style="display:none">
+						<input type="button" class="btn" id="login-button" value="Login" title="Login"/>
+						<input type="button" class="btn-2" id="logout-button" value="Logout" title="Logout"/>
+					</div>
 				</div>
-			</fieldset>
-			<fieldset class="checkboxgroup2" style="height:8em;" id="cfgValvesTableFieldSet2">
-				<legend>Characteristic</legend>	
-				<label><input type="number" min=0.5 max=5.0 maxlength=2 step=.1 style="width:60px" id="vCfg-lowC" name="vCfg-lowC" title="Max. current factor from mean"> Open  </label>
-				<label><input type="number" min=0.5 max=5.0 maxlength=2 step=.1 style="width:60px" id="vCfg-highC" name="vCfg-highC" title="Max. current factor from mean"> Close </label>
-				<label><input type="number" min=0 max=100 maxlength=3 step=1 style="width:60px" id="vCfg-StartOnPower" name="vCfg-StartOnPower" title="Start valves % at power on"> Start % </label>
-				<label><input type="number" min=0 max=60000 maxlength=5 step=1 style="width:60px" id="vCfg-noOfMinCount" name="vCfg-noOfMinCount" title="Number of minimum count detetced during calibration"> Min. count </label>
-				<label><input type="number" min=0 max=2 maxlength=5 step=1 style="width:60px" id="vCfg-maxCalReps" name="vCfg-maxCalReps" title="Max. number of consecutive calibration repetitions if minimum count detected"> Max. calib. repetitions </label>
-	
-			</fieldset>
-			</tr>
-			<fieldset class="checkboxgroup2" style="height:5em;" id="cfgValvesTableFieldSet2">
-				<legend>Assembly/Calibration</legend>	
-				<label><select id="valvesAsmCalib-select"></select></label>
-				<label>
-					<input type="button" class="buttonclass" id="valvesAssembly" value="Assembly" title="Set valves to assembly position">
-					<input type="button" class="buttonclass" id="valvesStartCalib" value="Calib" title="Start manual calibration of valves" />
-				</label>	
-			</fieldset>
-			</table>
-	
-		</div>	
-		<div class="rtabframe2">
-			<h3>Temperature sensor</h3>
-			<div style="height:30em;overflow-y:scroll">
-				<table id="cfgTSensorTable" class="tabTableCtl" border="3" frame="box" style="text-align:center"></table>
+			</section>
+
+			<section class="card">
+				<div class="card-h"><h2>Network</h2></div>
+				<div class="card-b">
+					<dl class="kv">
+						<div><dt>Connection</dt><dd id="net-EthWifi"></dd></div>
+						<div id="tr-rssi"><dt>Wi-Fi signal (RSSI)</dt><dd id="rssi"></dd></div>
+						<div><dt>DHCP</dt><dd id="net-dhcp"></dd></div>
+						<div><dt>IP address</dt><dd id="net-ip"></dd></div>
+						<div><dt>Subnet mask</dt><dd id="net-mask"></dd></div>
+						<div><dt>Gateway</dt><dd id="net-gw"></dd></div>
+						<div><dt>DNS</dt><dd id="net-dns"></dd></div>
+						<div><dt>MAC</dt><dd id="net-MAC"></dd></div>
+						<div><dt>Time server (SNTP)</dt><dd id="net-sntp-status"></dd></div>
+					</dl>
+					<dl id="net-broker" class="kv" style="display:none">
+						<div><dt>MQTT broker</dt><dd id="net-broker-status"></dd></div>
+					</dl>
+				</div>
+			</section>
 			</div>
-			<div class="tabiframe">	
-				<table id="cfgTSensorTable1" class="tabTable">
-				<tr>
-					<td>
-					<input type="button" class="buttonclass" id="tempSensorScan" value="Scan" title="Scan onewire sensors" />
-					</td>
-					<td>
-					<select id="sysCfg-CF">
-						<option>Celsius</option>
-						<option>Fahrenheit</option>
-					</select>
-					</td>
-				</tr>
-				</table>
-				<table>
-					<tr>
-						<th>Detected sensors</th>
-						<td id="tcfg-sensors"></td>
-					</tr>
-				</table>
+			<div class="space-y-4">
+
+			<section class="card">
+				<div class="card-h"><h2>ESP32 (WT32-ETH01)</h2></div>
+				<div class="card-b">
+					<dl class="kv">
+						<div><dt>Firmware</dt><dd id="sysWt32-Version"></dd></div>
+						<div><dt>Chip</dt><dd><span id="wt32-ChipModel"></span> rev <span id="wt32-ChipVersion"></span>, <span id="wt32-ChipCores"></span> cores</dd></div>
+						<div><dt>Flash used</dt><dd><span id="wt32-Sketch"></span> <span id="wt32-FlashUsed" class="badge"></span></dd></div>
+						<div><dt>Stack size</dt><dd id="wt32-ChipStack"></dd></div>
+						<div><dt>Heap free / minimum</dt><dd><span id="heap"></span> / <span id="min-heap"></span></dd></div>
+					</dl>
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="card-h"><h2>STM32 (valve driver)</h2></div>
+				<div class="card-b">
+					<dl class="kv">
+						<div><dt>Firmware</dt><dd id="sysSTM32-Version"></dd></div>
+						<div><dt>Chip id</dt><dd id="sysSTM32-ChipId"></dd></div>
+					</dl>
+				</div>
+			</section>
 			</div>
-		</div>
-
-		<div class="rtabframe3">
-			<h3>Voltage sensor</h3>
-			<div style="height:22.3em;overflow-y:scroll">
-				<table id="cfgVSensorTable" class="tabTableCtl" border="3" frame="box" style="text-align:center"></table>
-				<table>	
-					<tr>
-						<th>Detected sensors</th>
-						<td id="vcfg-sensors"></td>
-					</tr>
-				</table>
-			</div>
-		</div>
-
-		<div class="rtabframe" id ="messengerTabFrame" style="height:26em">
-			<h3>Messenger</h3>
-			<table id="cfgValvesTable1" class="tabTable">
-				<tr>
-				<fieldset class="checkboxgroup1" style="height:5em;" id="cfgMessengerFieldSet1">
-					<legend>Active</legend>
-					<label><input type="checkbox" id="MsgPOCfg-Active" name="theGroup">Pushover <input type="button" class="buttonclass1" id="msgCfg-PushOverParam" style="height:2em;" value="..." title="Push over parameter" /></label>
-					<label><input type="checkbox" id="MsgEmailCfg-Active" name="theGroup">Email <input type="button" class="buttonclass1" id="msgCfg-emailParam" style="height:2em;" value="..." title="Email parameter" /></label>
-				</fieldset>
-				<fieldset class="checkboxgroup1" style="height:14em;" id="cfgValvesTableFieldSet2">
-					<legend>Send reasons</legend>	
-					<label><input type="checkbox" id="MsgCfg-ReasonValveFailed" name="theGroup" title="If a time out occured. Maybe the motor is dropped">Valve failed </label>
-					<label><input type="checkbox" id="MsgCfg-ReasonValveBlocked" name="theGroup" title="If the valve is blocked (number of detected count less than motor config)">Valve blocked </label>
-					<label><input type="checkbox" id="MsgCfg-ReasonValveDetect" name="theGroup">Active valve not detected </label>
-					<label><input type="checkbox" id="MsgCfg-ReasonReset" name="theGroup">Reset detected </label>
-					<label><input type="checkbox" id="MsgCfg-ReasonMQTT" name="theGroup">MQTT failed,after<input type="number" class="form-input3" maxlength="3" style="width:3em;" min="1" max="999" id="protcfg-timeOutMqtt" name="protcfg-timeOutMqtt" title="Timeout (min) to check mqtt connection to send messenge"/>min</label>
-					<label><input type="checkbox" id="MsgCfg-ReasontValueFailed" name="theGroup" title="If tValue was not updated within mqtt timeout">tValue failed </label>
-					<label><input type="checkbox" id="MsgCfg-ReasonDS18Failed" name="theGroup">DS18 failed </label>
-				</fieldset>
-				</tr>
-			</table>
-		</div>
-
-		<div class="rtabframe" id ="fileTabFrame" style="height:20em">
-		<h3>Files</h3>
-		<table id="filesConfig" class="tabTable">
-			<tr>
-			<td>
-			<label>Please select one file:
-			<tr>
-			<td>
-			<select id="fileSelect" size="5">
-			  
-			</select>
-			</td>
-			</label>
-			</tr>
-			</tr>
-			<tr>
-				<td>
-				<input type="button" class="buttonclass" id="fileDelete" value="Delete file" title="Delete selected file"/>
-				
-				<input type="button" class="buttonclass" id="formatFS" value="Format FS" title="Format FS"/>
-				</td>
-
-			</tr>
-		</table>
-		</div>
-		
-		<div class="rtabframe" style="height:20em">
-		<h3>System</h3>
-		<table id="sysConfig" class="tabTable">
-			<tr>
-				<td>
-                <input type="button" class="buttonclass" id="sysReboot" value="Reboot system" title="Reboot system" />
-                </td>
-			</tr>
-			<tr>
-                <td>
-                <input type="button" class="buttonclass" id="saveConfig" value="Save config" title="Save all settings."/>
-                </td>
-            </tr>
-			<tr></tr>
-			<tr>
-                <td>
-                <input type="button" class="buttonclass" id="factoryRestore" value="Restore factory default settings" title="Reset config including network settings."/>
-                </td>
-            </tr>
-			<tr>
-				<td>
-                <input type="button" class="buttonclass" id="resetConfig" value="Reset config" title="Reset config excluding network settings." />
-                </td>
-			</tr>	
-		</table>
-		</div>
 		</div>
 	</div>
-	
+
+	<!-- Status -->
+	<div id="Status" class="tabContent">
+		<div class="mb-4 grid gap-4 sm:grid-cols-2">
+			<div class="stat"><div>Heat control</div><div id="miscStatusHC"></div></div>
+			<div class="stat"><div>Last calibration</div><div id="miscStatusLC"></div></div>
+		</div>
+
+		<section id="divValvesTable" class="card">
+			<div class="card-h">
+				<h2>Valves</h2>
+				<label class="check text-slate-600">Details<input type="checkbox" id="status-detailed" name="status-detailed" title="Show detailed status"/></label>
+			</div>
+			<div class="overflow-x-auto"><table id="valvesTable" class="tbl"></table></div>
+			<p class="hint flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 px-4 py-3">
+				<span><span class="st-ok rounded px-1.5">1</span> control active</span>
+				<span><span class="st-warn rounded px-1.5">1</span> control disabled / calibration warning</span>
+				<span><span class="st-err rounded px-1.5">1</span> valve failed</span>
+			</p>
+		</section>
+
+		<div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
+			<section id="tempStatusTabFrame" class="card">
+				<div class="card-h"><h2>Temperatures</h2></div>
+				<div class="max-h-[32rem] overflow-auto"><table id="tempsTable" class="tbl"></table></div>
+			</section>
+			<section id="voltStatusTabFrame" class="card">
+				<div class="card-h"><h2>Sensors</h2></div>
+				<div class="max-h-[32rem] overflow-auto"><table id="voltsTable" class="tbl"></table></div>
+			</section>
+		</div>
+	</div>
+
+	<!-- Settings -->
+	<div id="Config" class="tabContent">
+		<div id="spinner-Config"></div>
+
+		<h3 class="group-t">General</h3>
+		<div class="grid items-start gap-4 lg:grid-cols-2">
+			<section class="card">
+				<div class="card-h"><h2>Device &amp; login</h2></div>
+				<div class="card-b">
+					<div class="field"><label for="sysCfg-StationName">Station name</label><input type="text" maxlength="20" id="sysCfg-StationName" name="sysCfg-StationName"/></div>
+					<div class="field"><label for="sysCfg-CF">Temperature unit</label>
+						<select id="sysCfg-CF">
+							<option>Celsius</option>
+							<option>Fahrenheit</option>
+						</select>
+					</div>
+					<div class="sub">
+						<div class="sub-t">Web login</div>
+						<div class="field"><label for="netcfg-UserName">User name</label><input type="text" maxlength="64" id="netcfg-UserName" name="netcfg-UserName" autocomplete="off"/></div>
+						<div class="field"><label for="netcfg-UserPwd">Password</label><input type="password" maxlength="64" id="netcfg-UserPwd" name="netcfg-UserPwd" autocomplete="new-password"/></div>
+						<div class="field"><label for="netcfg-UserPwd2">Repeat password</label><input type="password" maxlength="64" id="netcfg-UserPwd2" name="netcfg-UserPwd2" autocomplete="new-password"/></div>
+						<p class="hint">Without a user name everybody in the network can change the settings.</p>
+					</div>
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="card-h"><h2>Time</h2></div>
+				<div class="card-b">
+					<div class="field"><label for="netcfg-TimeServer">Time server</label><input type="text" maxlength="64" id="netcfg-TimeServer" name="netcfg-TimeServer"/></div>
+					<div class="field"><label for="netcfg-tz">Time zone</label><select id="netcfg-tz" onchange="getTZCode()"></select></div>
+					<div class="field"><span>Time zone code</span><code id="netcfg-tzCode" class="text-xs text-slate-500"></code></div>
+				</div>
+			</section>
+		</div>
+
+		<h3 class="group-t">Connectivity</h3>
+		<div class="grid items-start gap-4 lg:grid-cols-2">
+			<section class="card">
+				<div class="card-h"><h2>Network</h2></div>
+				<div class="card-b">
+					<div class="field"><label for="netcfg-EthWifi">Connection</label>
+						<select id="netcfg-EthWifi">
+							<option>Auto</option>
+							<option>Eth</option>
+							<option>Wifi</option>
+						</select>
+					</div>
+					<div id="netcfg-wifi" style="display:none">
+						<div class="field"><label for="netcfg-WifiSSID">Wi-Fi name (SSID)</label><input type="text" maxlength="64" id="netcfg-WifiSSID" name="netcfg-WifiSSID"/></div>
+						<div class="field"><label for="netcfg-WifiPwd">Wi-Fi password</label><input type="password" maxlength="64" id="netcfg-WifiPwd" name="netcfg-WifiPwd" autocomplete="new-password"/></div>
+						<div class="field"><label for="netcfg-WifiPwd2">Repeat password</label><input type="password" maxlength="64" id="netcfg-WifiPwd2" name="netcfg-WifiPwd2" autocomplete="new-password"/></div>
+					</div>
+					<div class="field"><label for="netcfg-dhcp">DHCP</label>
+						<select id="netcfg-dhcp">
+							<option>OFF</option>
+							<option>ON</option>
+						</select>
+					</div>
+					<div id="netcfg-Tdhcp" style="display:none">
+						<div class="field"><label for="netcfg-ip">IP address</label><input type="text" id="netcfg-ip" name="netcfg-ip" placeholder="xxx.xxx.xxx.xxx"/></div>
+						<div class="field"><label for="netcfg-mask">Subnet mask</label><input type="text" id="netcfg-mask" name="netcfg-mask" placeholder="xxx.xxx.xxx.xxx"/></div>
+						<div class="field"><label for="netcfg-gw">Gateway</label><input type="text" id="netcfg-gw" name="netcfg-gw" placeholder="xxx.xxx.xxx.xxx"/></div>
+						<div class="field"><label for="netcfg-dns">DNS</label><input type="text" id="netcfg-dns" name="netcfg-dns" placeholder="xxx.xxx.xxx.xxx"/></div>
+					</div>
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="card-h"><h2>MQTT</h2></div>
+				<div class="card-b">
+					<div class="field"><label for="protcfg-dataProt">Protocol</label>
+						<select id="protcfg-dataProt">
+							<option>none</option>
+							<option>MQTT</option>
+							<option>MQTT HA</option>
+						</select>
+					</div>
+					<div id="protcfg-Broker" style="display:none">
+						<div class="field"><label for="protcfg-Ip">Broker IP</label><input type="text" id="protcfg-Ip" name="protcfg-Ip" placeholder="xxx.xxx.xxx.xxx"/></div>
+						<div class="field"><label for="protcfg-Port">Broker port</label><input type="text" id="protcfg-Port" name="protcfg-Port" placeholder="1883"/></div>
+						<div class="field"><label for="protcfg-User">User name</label><input type="text" id="protcfg-User" name="protcfg-User" autocomplete="off"/></div>
+						<div class="field"><label for="protcfg-Pwd">Password</label><input type="password" maxlength="64" id="protcfg-Pwd" name="protcfg-Pwd" autocomplete="new-password"/></div>
+						<div class="field"><label for="protcfg-Pwd2">Repeat password</label><input type="password" maxlength="64" id="protcfg-Pwd2" name="protcfg-Pwd2" autocomplete="new-password"/></div>
+					</div>
+					<div id="div-protcfg-Broker3" class="tabpframe">
+						<div id="protcfg-Broker3" style="display:none">
+							<div class="field"><label for="protcfg-Interval">Poll interval (ms)</label><input type="number" min="100" id="protcfg-Interval" name="protcfg-Interval" title="Polling interval in ms (default 1000). This polls the mqtt connection for events coming from broker"/></div>
+							<div class="field"><label for="protcfg-Publish">Publish interval (s)</label><input type="number" min="2" id="protcfg-Publish" name="protcfg-Publish" title="If Publish on change is not checked, it defines the publish interval of all values in seconds (default 10), otherwise it defines the time out to publish the values even the value was not changed."/></div>
+							<div class="field"><label for="protcfg-pubOnChange">Publish on change</label><div><input type="checkbox" id="protcfg-pubOnChange" name="protcfg-pubOnChange" title="Publish values if changed or time out (defined in Publish interval, individually for each valve and temperature sensor)"/></div></div>
+							<div class="field" id="tr-minPubTime"><label for="protcfg-pubMinDelay">Min. time between publishes (s)</label><input type="number" min="2" id="protcfg-pubMinDelay" name="protcfg-pubMinDelay" title="Minimum time (in seconds) the system wait for the next publishing values, individually for each valve and temperature sensor"/></div>
+							<div class="field"><label for="protcfg-keepAliveTime">Keep alive (s)</label><input type="number" min="100" id="protcfg-keepAliveTime" name="protcfg-keepAliveTime" title="After this time the connection will be closed if there is no traffic"/></div>
+						</div>
+					</div>
+					<div id="protcfg-Broker1" style="display:none">
+						<details id="protcfg-BrokerDPublish" class="acc">
+							<summary>Publish options</summary>
+							<fieldset id="protcfg-Broker2" class="acc-b">
+								<label class="check"><input type="checkbox" id="protcfg-pubRetained" name="theGroupP" title="Publish values retained">Retained</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubPlainText" name="theGroupP" title="Publish values as plaintext instead 0/1">Plain text instead of 0/1</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubSeparate" name="theGroupP" title="Handle topics strict separate for write and read. Topics sent from server has to be added a /set">Strict separate topics (/set)</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubAllTemps" name="theGroupP">All temperatures</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubPathAsRoot" name="theGroupP">Path as root</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubUpTime" name="theGroupP">Up time</label>
+								<label class="check"><input type="checkbox" id="protcfg-pubDiag" name="theGroupP">Diagnostics</label>
+								<div class="field"><label for="protcfg-numFormat">Number format</label>
+									<select id="protcfg-numFormat" name="theGroupP" title="Handle decimal point as international (.) or like german (,)">
+										<option>International</option>
+										<option>German</option>
+									</select>
+								</div>
+							</fieldset>
+						</details>
+						<details id="protcfg-BrokerDFailed" class="acc">
+							<summary>Failure handling</summary>
+							<fieldset id="protcfg-Broker21" class="acc-b">
+								<label class="check"><input type="checkbox" id="protcfg-timeOutDSActive" name="theGroupP21" title="Time out for DS18 sensor (fixed 5 min)">DS18 sensor timeout (5 min)</label>
+								<div class="check">
+									<input type="checkbox" id="protcfg-timeOutTSActive" name="theGroupP21" title="If there is no tValue received via mqtt after this time the corresponding valve goes to the defined position.
+Caution : If this option is activated it is absolutely mandatory to ensure that the tValue is received within the time frame.
+Publish on change on server side is not recommended with this option">
+									<label for="protcfg-timeOutTSActive">tValue timeout after</label>
+									<input type="number" class="w-20" maxlength="4" min="10" id="protcfg-timeOutValue" name="protcfg-timeOutValue"/> min
+								</div>
+								<div class="field"><label for="protcfg-timeOutPosition">Valve position after timeout (%)</label><input type="number" min="0" max="100" maxlength="3" id="protcfg-timeOutPosition" name="protcfg-timeOutPosition" title="Valve position after time out."/></div>
+							</fieldset>
+						</details>
+						<details id="protcfg-BrokerDHA" class="acc">
+							<summary>Home Assistant</summary>
+							<div class="acc-b">
+								<input type="button" class="btn-2" id="protcfg-discoverHA" name="theGroupP22" value="Run discovery" title="Discovery Home Assistant"/>
+							</div>
+						</details>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<h3 class="group-t">Valves</h3>
+		<div class="grid items-start gap-4 lg:grid-cols-2">
+			<section class="card">
+				<div class="card-h">
+					<h2>Valves</h2>
+					<input type="button" class="btn-2" id="valvesDetect" value="Scan for valves" title="Detect valves"/>
+				</div>
+				<div class="overflow-x-auto"><table id="cfgValvesTable" class="tbl"></table></div>
+				<p class="hint px-4 py-3">A green number means the valve is connected. TIdx1/TIdx2: number of the temperature sensor of this valve, 0 = none.</p>
+			</section>
+
+			<section class="card" id="motorTabFrame">
+				<div class="card-h"><h2>Motor &amp; calibration</h2></div>
+				<div class="card-b">
+					<fieldset id="cfgValvesTableFieldSet1">
+						<legend class="sub-t">Next calibration</legend>
+						<div class="field"><label for="vCfg-movCalib">After movements</label><input type="number" min="50" maxlength="4" id="vCfg-movCalib" name="vCfg-movCalib" title="Number of movements to next calibration"/></div>
+						<div id="calibDate">
+							<div class="field"><label for="vCfg-hCalib">At hour</label><input type="number" max="24" min="0" maxlength="2" id="vCfg-hCalib" name="vCfg-hCalib" title="Hour time of next calibration"/></div>
+							<div class="grid grid-cols-2 gap-x-4 sm:grid-cols-4">
+								<label class="check"><input type="checkbox" id="vCfg-d1" name="theGroup">Monday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d2" name="theGroup">Tuesday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d3" name="theGroup">Wednesday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d4" name="theGroup">Thursday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d5" name="theGroup">Friday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d6" name="theGroup">Saturday</label>
+								<label class="check"><input type="checkbox" id="vCfg-d0" name="theGroup">Sunday</label>
+							</div>
+						</div>
+					</fieldset>
+					<div class="sub">
+						<fieldset id="cfgValvesTableFieldSet2">
+							<legend class="sub-t">Motor characteristic</legend>
+							<div class="field"><label for="vCfg-lowC">Current factor open</label><input type="number" min="0.5" max="5.0" maxlength="2" step=".1" id="vCfg-lowC" name="vCfg-lowC" title="Max. current factor from mean"/></div>
+							<div class="field"><label for="vCfg-highC">Current factor close</label><input type="number" min="0.5" max="5.0" maxlength="2" step=".1" id="vCfg-highC" name="vCfg-highC" title="Max. current factor from mean"/></div>
+							<div class="field"><label for="vCfg-StartOnPower">Position at power on (%)</label><input type="number" min="0" max="100" maxlength="3" step="1" id="vCfg-StartOnPower" name="vCfg-StartOnPower" title="Start valves % at power on"/></div>
+							<div class="field"><label for="vCfg-noOfMinCount">Minimum count</label><input type="number" min="0" max="60000" maxlength="5" step="1" id="vCfg-noOfMinCount" name="vCfg-noOfMinCount" title="Number of minimum count detetced during calibration"/></div>
+							<div class="field"><label for="vCfg-maxCalReps">Max. calibration repetitions</label><input type="number" min="0" max="2" maxlength="5" step="1" id="vCfg-maxCalReps" name="vCfg-maxCalReps" title="Max. number of consecutive calibration repetitions if minimum count detected"/></div>
+						</fieldset>
+					</div>
+					<div class="sub">
+						<fieldset id="cfgValvesTableFieldSet3">
+							<legend class="sub-t">Assembly &amp; calibration</legend>
+							<div class="flex flex-wrap items-center gap-2">
+								<select id="valvesAsmCalib-select" title="Valve"></select>
+								<input type="button" class="btn-2" id="valvesAssembly" value="Assembly position" title="Set valves to assembly position"/>
+								<input type="button" class="btn-2" id="valvesStartCalib" value="Calibrate" title="Start manual calibration of valves"/>
+							</div>
+						</fieldset>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<h3 class="group-t">Sensors</h3>
+		<div class="grid items-start gap-4">
+			<section class="card">
+				<div class="card-h">
+					<h2>Temperature sensors <span class="badge"><span id="tcfg-sensors">0</span> found</span></h2>
+					<input type="button" class="btn-2" id="tempSensorScan" value="Scan 1-wire bus" title="Scan onewire sensors"/>
+				</div>
+				<div class="max-h-[30rem] overflow-auto"><table id="cfgTSensorTable" class="tbl"></table></div>
+			</section>
+
+			<section class="card">
+				<div class="card-h">
+					<h2>Voltage sensors <span class="badge"><span id="vcfg-sensors">0</span> found</span></h2>
+				</div>
+				<div class="max-h-[30rem] overflow-auto"><table id="cfgVSensorTable" class="tbl"></table></div>
+			</section>
+		</div>
+
+		<div id="messengerTabFrame" hidden>
+			<h3 class="group-t">Notifications</h3>
+			<section class="card">
+				<div class="card-b grid gap-6 md:grid-cols-2">
+					<fieldset id="cfgMessengerFieldSet1">
+						<legend class="sub-t">Services</legend>
+						<div id="msgRowPO" class="check justify-between">
+							<label class="check"><input type="checkbox" id="MsgPOCfg-Active" name="theGroup">Pushover</label>
+							<input type="button" class="btn-2" id="msgCfg-PushOverParam" value="Settings…" title="Push over parameter"/>
+						</div>
+						<div id="msgRowEmail" class="check justify-between">
+							<label class="check"><input type="checkbox" id="MsgEmailCfg-Active" name="theGroup">Email</label>
+							<input type="button" class="btn-2" id="msgCfg-emailParam" value="Settings…" title="Email parameter"/>
+						</div>
+					</fieldset>
+					<fieldset id="cfgMessengerFieldSet2">
+						<legend class="sub-t">Send a message when</legend>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasonValveFailed" name="theGroup" title="If a time out occured. Maybe the motor is dropped">a valve failed</label>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasonValveBlocked" name="theGroup" title="If the valve is blocked (number of detected count less than motor config)">a valve is blocked</label>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasonValveDetect" name="theGroup">an active valve is not detected</label>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasonReset" name="theGroup">a reset was detected</label>
+						<div class="check"><input type="checkbox" id="MsgCfg-ReasonMQTT" name="theGroup"><label for="MsgCfg-ReasonMQTT">MQTT failed for</label><input type="number" class="w-20" maxlength="3" min="1" max="999" id="protcfg-timeOutMqtt" name="protcfg-timeOutMqtt" title="Timeout (min) to check mqtt connection to send messenge"/> min</div>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasontValueFailed" name="theGroup" title="If tValue was not updated within mqtt timeout">tValue failed</label>
+						<label class="check"><input type="checkbox" id="MsgCfg-ReasonDS18Failed" name="theGroup">a DS18 sensor failed</label>
+					</fieldset>
+				</div>
+			</section>
+		</div>
+
+		<h3 class="group-t">Maintenance</h3>
+		<div class="grid items-start gap-4 lg:grid-cols-3">
+			<section class="card">
+				<div class="card-h"><h2>Syslog</h2></div>
+				<div class="card-b">
+					<div class="field"><label for="netcfg-syslog-select">Level</label>
+						<select id="netcfg-syslog-select">
+							<option>Off</option>
+							<option>Small</option>
+							<option>Detail</option>
+							<option>Atomic</option>
+						</select>
+					</div>
+					<div id="netcfg-syslog-table" style="display:none">
+						<div class="field"><label for="netcfg-syslog-ip">Server IP</label><input type="text" id="netcfg-syslog-ip" name="netcfg-syslog-ip" placeholder="xxx.xxx.xxx.xxx"/></div>
+						<div class="field"><label for="netcfg-syslog-port">Port</label><input type="text" id="netcfg-syslog-port" name="netcfg-syslog-port" placeholder="514"/></div>
+					</div>
+					<div class="mt-3 flex items-center justify-between gap-3">
+						<p class="hint">Applied right away.</p>
+						<input type="button" class="btn-2" id="setSysLog" value="Apply" title="Set syslog server values"/>
+					</div>
+				</div>
+			</section>
+
+			<section class="card" id="fileTabFrame">
+				<div class="card-h"><h2>Files</h2></div>
+				<div class="card-b">
+					<select id="fileSelect" size="5" class="w-full" title="Files on the controller"></select>
+					<div class="mt-3 flex flex-wrap gap-2">
+						<input type="button" class="btn-2" id="fileDelete" value="Delete file" title="Delete selected file"/>
+						<input type="button" class="btn-danger" id="formatFS" value="Format file system" title="Format FS"/>
+					</div>
+				</div>
+			</section>
+
+			<section class="card">
+				<div class="card-h"><h2>System</h2></div>
+				<div class="card-b space-y-3">
+					<div class="flex items-center justify-between gap-3"><span>Restart the controller</span><input type="button" class="btn-2" id="sysReboot" value="Reboot" title="Reboot system"/></div>
+					<div class="flex items-center justify-between gap-3"><span>Reset settings, keep network</span><input type="button" class="btn-danger" id="resetConfig" value="Reset" title="Reset config excluding network settings."/></div>
+					<div class="flex items-center justify-between gap-3"><span>Factory reset incl. network</span><input type="button" class="btn-danger" id="factoryRestore" value="Factory reset" title="Reset config including network settings."/></div>
+				</div>
+			</section>
+		</div>
+
+		<div class="savebar">
+			<p class="hint">Settings on this page take effect after saving, the page reloads afterwards.</p>
+			<input type="button" class="btn" id="saveConfig" value="Save settings" title="Save all settings."/>
+		</div>
+	</div>
+
+	<!-- Control -->
 	<div id="Control" class="tabContent">
-	<div class="container">
-		<div class="rtabframe3">  
-			<h3>Valves</h3>	
-			<table id="cfgValvesControlTable" class="tabTableCtl" border="3" frame="box">
-			</table>
-			<table class="tabTable">
-			<tr>
-				<td>
-				<input type="button" class="buttonclass" id="saveVCtrlConfig" value="Save valve control settings" title="Save settings for valves control."/>
-				</td>
-				<td>
-					<label>Heat Control</label>
-					<select id="VCtrlConfigHeatControl" title="Heat valves control manual/on Heating/on Cooling/off=Park position.">
-					<option>Manual</option>
-					<option>On/Heating</option>
-					<option>On/Cooling</option>
-					<option>Off/Park position</option>
-					</select>
-				
-				</td>
-				<td>
-					<label>Park Position</label>
-					<input type="number" class="form-input" style="width:50px;" min="0" max="100" id="VCtrlConfigParkPosition" title="Park position if Heat Control is off."/>
-				</td>
-			</tr>
-			</table>
-		</div>
+		<section class="card">
+			<div class="card-h">
+				<h2>Valve control</h2>
+				<div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+					<label class="check">Heat control<span class="tip" tabindex="0" data-tip="Manual: VdMot does not regulate, valves get their position via MQTT or by hand. On/Heating, On/Cooling: valves with Active switched on are regulated. Off: all valves go to the park position.">?</span>
+						<select id="VCtrlConfigHeatControl">
+							<option>Manual</option>
+							<option>On/Heating</option>
+							<option>On/Cooling</option>
+							<option>Off/Park position</option>
+						</select>
+					</label>
+					<label class="check">Park position<span class="tip" tabindex="0" data-tip="Position of all valves while Heat control is Off, e.g. outside the heating season.">?</span>
+						<input type="number" class="w-20" min="0" max="100" id="VCtrlConfigParkPosition"/> %
+					</label>
+				</div>
+			</div>
+			<div class="overflow-x-auto"><table id="cfgValvesControlTable" class="tbl"></table></div>
+			<div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+				<p class="hint">Hover or tap <span class="tip">?</span> for an explanation of a column.</p>
+				<input type="button" class="btn" id="saveVCtrlConfig" value="Save control settings" title="Save settings for valves control."/>
+			</div>
+		</section>
 	</div>
-	</div>
-	
+
+	<!-- Update -->
 	<div id="Update" class="tabContent">
-		<div class="rtabframe" style="width: 250px;">
-		<h3>Update</h3>
-		<table id="sysUpdate" class="tabTable">
-			<tr>
-				<td>
-                <input type="button" class="buttonclass" id="update-WT32" value="Update WT32" title="Update WT32" />
-                </td>
-			</tr>
-			<tr>
-				<td>
-                <input type="button" class="buttonclass" id="update-STM32" value="Update STM32" title="Update WT32" />
-                </td>
-			</tr>
-		</table>
+		<div class="grid items-start gap-4 md:grid-cols-2">
+			<section class="card">
+				<div class="card-h"><h2>ESP32 firmware</h2></div>
+				<div class="card-b">
+					<p class="hint mb-4">Web interface and network part (WT32-ETH01). Upload a firmware or file system image.</p>
+					<input type="button" class="btn" id="update-WT32" value="Update ESP32" title="Update WT32"/>
+				</div>
+			</section>
+			<section class="card">
+				<div class="card-h"><h2>STM32 firmware</h2></div>
+				<div class="card-b">
+					<p class="hint mb-4">Valve driver (BlackPill). The file is uploaded to the ESP32 first, which then flashes the STM32.</p>
+					<input type="button" class="btn" id="update-STM32" value="Update STM32" title="Update STM32"/>
+				</div>
+			</section>
 		</div>
 	</div>
-	
+
+	<!-- About -->
 	<div id="About" class="tabContent">
-		<div class="tabframe" style="width: 450px;">
-		<h3>About this VDMot controller</h3>
-		<table id="aboutInfo" class="tabTable">
-		<p> 
-		THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR
-		IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-		IN NO EVENT SHALL THE DEVELOPER OR ANY CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-		INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-		(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-		SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-		HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-		STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
-		IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-		THE POSSIBILITY OF SUCH DAMAGE. 
-		</p>
-		<p> 	
-		This program is free software: you can redistribute it and/or modify
-		it under the terms of the GNU General Public License as published by
-		the Free Software Foundation, either version 3 of the License.
-		</p>
-		<p> 
-		See the GNU General Public License for more details.
+		<section class="card max-w-3xl">
+			<div class="card-h"><h2>About this VdMot controller</h2></div>
+			<div id="aboutInfo" class="card-b space-y-3 text-slate-600">
+				<p>Copyright (C) 2021-2024 Lenti84, <a class="text-emerald-700 underline" href="https://github.com/Lenti84/VdMot_Controller">github.com/Lenti84/VdMot_Controller</a><br>Contributor: SurfGargano</p>
+				<p>This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.</p>
+				<p class="text-xs">THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE DEVELOPER OR ANY CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+			</div>
+		</section>
+	</div>
 
-		You should have received a copy of the GNU General Public License
-		along with this program.  If not, see http://www.gnu.org/licenses/.
-		</p>
-		<p>
-		Copyright (C) 2021-2024 Lenti84  https://github.com/Lenti84/VdMot_Controller
-		</p>	
-		<p>
-		Contributor : SurfGargano
-		</p>
-		</table>
+	<div id="pwdModal" class="modal">
+		<div class="modal-content">
+			<form name="login" id="loginForm" action="" method="get" onsubmit="id('loginDialogOk').click(); return false;">
+				<div class="mb-4 flex items-center justify-between">
+					<h2 class="text-base font-semibold text-slate-900">Login</h2>
+					<span class="close" title="Close">&times;</span>
+				</div>
+				<div class="field"><label for="dialogUserInput">User name</label><input type="text" maxlength="64" id="dialogUserInput" autocomplete="username" title="Please enter user name"/></div>
+				<div class="field"><label for="dialogPwdInput">Password</label><input type="password" maxlength="64" id="dialogPwdInput" autocomplete="current-password" title="Please enter password"/></div>
+				<label class="check mt-1"><input type="checkbox" id="login-rememberMe" title="Remember the login of this device"/>Remember me on this device</label>
+				<div class="mt-5 flex justify-end gap-2">
+					<input type="button" class="btn-2" id="loginDialogCancel" value="Cancel"/>
+					<input type="button" class="btn" id="loginDialogOk" value="Login"/>
+				</div>
+			</form>
 		</div>
 	</div>
-	
-	<div id="pwdModal" class="modal">
-	  <div class="modal-content">
-		<form name="login" id="loginForm" action="" method="get">
-		<span class="close">&times;</span>
-		<p>Please type user and password</p>
-		<table>
-			<th>User name</th>
-				<td colspan='3'>
-				<input type="text" maxlength="64" class="form-input1" id="dialogUserInput" name="dialogUserInput" title="Please enter user name"/>
-				</td>
-			</tr>
-			<tr>
-				<th>User password</th>
-				<td colspan='3'>
-				<input type="password" maxlength="64" class="form-input1" id="dialogPwdInput" name="dialogPwdInput" title="Please enter password"/>
-				</td>
-			</tr>
-			
-			<tr>
-				<td>
-					<input type="button" class="buttonclass" id="loginDialogOk" value="ok"/>
-				</td><td>
-					<input type="button" class="buttonclass" id="loginDialogCancel" value="cancel"/>
-				</td>
-			</tr>
-			<tr>
-				<th>Remember me</th>
-				<td>
-					<input type="checkbox" id="login-rememberMe" name="login-rememberMe" title="Remember the login of this device"/>
-				</td>
-			</tr>
-			
-		</table>
-		</form>
-	  </div>
-	</div>
 
+	<div id="tipBox" role="tooltip" hidden></div>
 
 	<script>		
 				
@@ -2058,15 +1116,15 @@ Publish on change on server side is not recommended with this option">tValue aft
 				}
 			}
 			if (showAllTabs) {
-				activeSetValvesDisplay = "block";
+				activeSetValvesDisplay = "inline-block";
 			} else {
 				activeSetValvesDisplay = "none";
 			}
 			id('activeSetValves').style.display=activeSetValvesDisplay;
 		}
 		
-		function openPage(pageName,elmnt,color) {
-			let i, tabContent, tabLinks;	
+		function openPage(pageName,elmnt) {
+			let i, tabContent, tabLinks;
 			localStorage.pageId=elmnt.id;
 			let thisUrl = new URL(elmnt.href);
 			localStorage.pageUrl=thisUrl.hash;
@@ -2076,12 +1134,54 @@ Publish on change on server side is not recommended with this option">tValue aft
 			}
 			tabLinks = document.getElementsByClassName("tabLink");
 			for (i = 0; i < tabLinks.length; i++) {
-				tabLinks[i].style.backgroundColor = "";
+				tabLinks[i].classList.remove("active");
 			}
 			if (showThisTab(pageName)===true) {
 				id(pageName).style.display = "block";
-				elmnt.style.backgroundColor = color;
+				elmnt.classList.add("active");
 			}
+		}
+
+		// table header cell with a help popup
+		function setHelpHeader(cell, text, help) {
+			cell.textContent = text;
+			let el = document.createElement('span');
+			el.className = 'tip';
+			el.setAttribute('tabindex', '0');
+			el.dataset.tip = help;
+			el.textContent = '?';
+			cell.appendChild(el);
+		}
+
+		// help popups of all elements with data-tip, on hover, tap or keyboard focus
+		function showTip(el) {
+			const box = id('tipBox');
+			box.textContent = el.dataset.tip;
+			box.hidden = false;
+			const r = el.getBoundingClientRect();
+			let left = r.left + r.width/2 - box.offsetWidth/2;
+			left = Math.max(8, Math.min(left, window.innerWidth - box.offsetWidth - 8));
+			let top = r.bottom + 6;
+			if (top + box.offsetHeight > window.innerHeight - 8) top = r.top - box.offsetHeight - 6;
+			box.style.left = left + 'px';
+			box.style.top = top + 'px';
+		}
+		function hideTip() {
+			id('tipBox').hidden = true;
+		}
+		function tipEvent(e) {
+			const el = (e.target instanceof Element) ? e.target.closest('[data-tip]') : null;
+			if (el) showTip(el); else hideTip();
+		}
+		document.addEventListener('mouseover', tipEvent);
+		document.addEventListener('click', tipEvent);
+		document.addEventListener('focusin', tipEvent);
+		window.addEventListener('scroll', hideTip, true);
+
+		// state colors of table cells: "st-ok", "st-warn", "st-err" or "" (none)
+		function setCellState(el, state) {
+			el.classList.remove("st-ok","st-warn","st-err");
+			if (state) el.classList.add(state);
 		}
 				
 				
@@ -2128,7 +1228,8 @@ Publish on change on server side is not recommended with this option">tValue aft
 					else {
 						if (window.location.hash.indexOf('#') !== -1) {
 							let thisOpenId = window.location.hash.substring(1)+'Open';
-							id(thisOpenId).click();
+							if (document.getElementById(thisOpenId)) id(thisOpenId).click();
+							else id("defaultOpen").click();
 							//console.log ('OpenId  '+ thisOpenId);
 						}
 					}
@@ -2218,8 +1319,8 @@ Publish on change on server side is not recommended with this option">tValue aft
 							}
 							showAllTabs= true;
 							showAllTabsNow();
-							activeSetValvesDisplay = "block";
-							id('activeSetValves').style.display="block";
+							activeSetValvesDisplay = "inline-block";
+							id('activeSetValves').style.display="inline-block";
 							id("loginForm").submit();
 							break;
 						 }
@@ -2291,7 +1392,6 @@ Publish on change on server side is not recommended with this option">tValue aft
 				let el = document.createElement('img');
 				el.setAttribute('name', 'windowImg' + row);
 				el.setAttribute('id', 'windowImg' + row);
-				el.setAttribute('style','height:30px;');
 				el.className = "alignTabCellImgState";
 				thiscell.appendChild(el);
 				
@@ -2310,7 +1410,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('maxlength' , '3');
 				el.setAttribute('min' , '0');
 				el.setAttribute('max' , '100');
-				el.setAttribute('style','height:15px');
+				el.setAttribute('style','width:4.5em');
 				el.setAttribute('readonly','true');
 				thiscell.appendChild(el);
 
@@ -2319,7 +1419,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('type', 'button');
 				el.setAttribute('name', 'setValveButton-' + valvesJson[row-1].idx);
 				el.setAttribute('id', 'setValveButton-' + row);
-				el.setAttribute('style','height:20px;width:35px;visibility:hidden;');
+				el.setAttribute('style','visibility:hidden;');
 				el.setAttribute('value', 'Set');
 				el.setAttribute('onclick','setValve(this);');
 				thiscell.appendChild(el);
@@ -2329,23 +1429,21 @@ Publish on change on server side is not recommended with this option">tValue aft
 					thiscell = valvesTable.rows[row].cells[11];
 					let p = document.createElement('p');
 					p.setAttribute('id', 'tNode1-' + row);
-					p.setAttribute('style','font-size:8px;margin-top:0px;');
+					p.setAttribute('style','font-size:10px;color:#64748b;');
 					thiscell.appendChild(p);
 
 					p = document.createElement('p');
 					p.setAttribute('id', 'tp1-' + row);
-					p.setAttribute('style','margin-top:0px;');
 					thiscell.appendChild(p);
 
 					thiscell = valvesTable.rows[row].cells[12];
 					p = document.createElement('p');
 					p.setAttribute('id', 'tNode2-' + row);
-					p.setAttribute('style','font-size:8px;margin-top:0px;');
+					p.setAttribute('style','font-size:10px;color:#64748b;');
 					thiscell.appendChild(p);
 
 					p = document.createElement('p');
 					p.setAttribute('id', 'tp2-' + row);
-					p.setAttribute('style','margin-top:0px;');
 					thiscell.appendChild(p);
 				}
 			}
@@ -2405,9 +1503,9 @@ Publish on change on server side is not recommended with this option">tValue aft
 			tempsTable.rows[0].cells[0].textContent = 'No';
 			tempsTable.rows[0].cells[1].textContent = 'Name';
 			if (id("sysCfg-CF").selectedIndex==0)
-				tempsTable.rows[0].cells[2].textContent = 'C';
+				tempsTable.rows[0].cells[2].textContent = '°C';
 			else
-				tempsTable.rows[0].cells[2].textContent = 'F';
+				tempsTable.rows[0].cells[2].textContent = '°F';
 			if (NoOfSensors>12) tempsTable.style.height="430px";
 		}
 		
@@ -2561,7 +1659,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('size', '12');
 				el.setAttribute('maxlength' , '8');
 				el.setAttribute('step' , '0.001');
-				el.setAttribute('style','width:60px;');
+				el.setAttribute('style','width:70px;');
 				thiscell.appendChild(el);
 				thiscell = cfgVoltTable.rows[row].cells[4];
 				el = document.createElement('input');
@@ -2571,7 +1669,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('size', '12');
 				el.setAttribute('maxlength' , '8');
 				el.setAttribute('step' , '0.001');
-				el.setAttribute('style','width:60px;');
+				el.setAttribute('style','width:70px;');
 				thiscell.appendChild(el);
 				thiscell = cfgVoltTable.rows[row].cells[5];
 				el = document.createElement('input');
@@ -2639,7 +1737,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.className = "alignTabCellCenter";
 				el.setAttribute('name', 'cfgVCAllow' + row);
 				el.setAttribute('id', 'cfgVCAllow' + row);
-				el.setAttribute('style','width:90px;');
+				el.setAttribute('style','width:105px;');
 				el.setAttribute('title','Select control allowed');
 				let option = new Option('Heat/Cool', 0);
 				el.options[0] = option;
@@ -2769,7 +1867,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.className = "alignTabCellCenter";
 				el.setAttribute('name', 'cfgVCScheme-' + row);
 				el.setAttribute('id', 'cfgVCScheme-' + row);
-				el.setAttribute('style','width:90px;');
+				el.setAttribute('style','width:105px;');
 				option = new Option('dynamic ki', 0);
 				el.options[0] = option;
 				option = new Option('static ki', 1);
@@ -2835,38 +1933,28 @@ Publish on change on server side is not recommended with this option">tValue aft
 				el.setAttribute('title','Minimum opening of the valve (%), smaller openings are not used to avoid flow noise. 0 = off');
 				thiscell.appendChild(el);
 			}
-			let col=0;
-			valvesControlTable.rows[0].cells[col++].textContent = 'No';
-			valvesControlTable.rows[0].cells[col++].textContent = 'Name';
-			valvesControlTable.rows[0].cells[col++].textContent = 'Active';
-			valvesControlTable.rows[0].cells[col].textContent = 'Allow';
-			valvesControlTable.rows[0].cells[col++].title = 'Select control allowed';
-			valvesControlTable.rows[0].cells[col].textContent = 'Link';
-			valvesControlTable.rows[0].cells[col++].title = 'Select link for this valve';
-			valvesControlTable.rows[0].cells[col].textContent = 'Value';
-			valvesControlTable.rows[0].cells[col++].title = 'Select value source for this valve';
-			valvesControlTable.rows[0].cells[col].textContent = 'Target';
-			valvesControlTable.rows[0].cells[col++].title = 'Select target source for this valve';
-			valvesControlTable.rows[0].cells[col].textContent = 'Xp';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter band (xp). Kp=100/xp';
-			valvesControlTable.rows[0].cells[col].textContent = 'Deadband';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter deadband';
-			valvesControlTable.rows[0].cells[col].textContent = 'Offset(%)';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter offset';
-			valvesControlTable.rows[0].cells[col].textContent = 'Ti(s)';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter integral time in seconds';
-			valvesControlTable.rows[0].cells[col].textContent = 'Ts(s)';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter sampling time in seconds';
-			valvesControlTable.rows[0].cells[col].textContent = 'Scheme';
-			valvesControlTable.rows[0].cells[col++].title = 'Enter scheme for control calculation';
-			valvesControlTable.rows[0].cells[col].textContent = 'ki';
-			valvesControlTable.rows[0].cells[col++].title = 'Value ki for constant integral control calculation';
-			valvesControlTable.rows[0].cells[col].textContent = 'Active zone';
-			valvesControlTable.rows[0].cells[col++].title = 'Active zone of the valve (0-100 %)';
-			valvesControlTable.rows[0].cells[col].textContent = 'Window';
-			valvesControlTable.rows[0].cells[col++].title = 'Activate window handling';
-			valvesControlTable.rows[0].cells[col].textContent = 'Min. open(%)';
-			valvesControlTable.rows[0].cells[col++].title = 'Minimum opening of the valve (%), smaller openings are not used to avoid flow noise. 0 = off';
+			const headers = [
+				['No', 'Valve number, green = valve is connected.'],
+				['Name', 'Name of the valve, set in Settings > Valves.'],
+				['Active', 'VdMot regulates this valve from room and set temperature. Only with Heat control On/Heating or On/Cooling, with Manual the valve keeps the position it gets via MQTT or by hand.'],
+				['Allow', 'In which mode this valve regulates. In the other mode it goes to the start of the active zone.'],
+				['Link', 'Follow another valve: this valve gets the same position as the selected one, its own control settings are not used. For rooms with more than one circuit. Active has to be on.'],
+				['Value', 'Source of the room temperature: MQTT (.../tValue), the 1st or 2nd temperature sensor of the valve (TIdx1/TIdx2 in Settings > Valves) or json (HTTP POST /setvalve, ctrlValue).'],
+				['Target', 'Source of the set temperature: MQTT (.../tTarget) or json (HTTP POST /setvalve, ctrlTarget). The number is the set temperature after a restart, until a new one arrives.'],
+				['Xp', 'Proportional band in K, Kp = 100/Xp. With 20, 1 K below the set temperature opens the valve 5 % more. Smaller = stronger reaction, too small = oscillation.'],
+				['Deadband', 'No new valve position while the room temperature is within this many K of the set temperature. 0 = off.'],
+				['Offset(%)', 'Added to the calculated position. Without deviation and integral part the controller sits at 50 % + offset.'],
+				['Ti(s)', 'Integral time: how fast a remaining deviation is corrected. With dynamic ki the integral part adds Kp x deviation per Ti. Smaller = faster, too small = overshoot. Default 3600 (1 h).'],
+				['Ts(s)', 'Sample time: how often a new valve position is calculated. Default 900 (15 min), floor heating reacts slowly.'],
+				['Scheme', 'dynamic ki: classic PI controller, the integral part follows from Xp and Ti (default). static ki: the integral gain is the fixed value in column ki, independent of Xp.'],
+				['ki', 'Integral gain for scheme static ki, in % per K deviation and Ti. Only used (and shown) with static ki.'],
+				['Active zone', 'Range the controller output 0-100 % is mapped into, e.g. 20-80. With a start above 0 the valve never closes completely while regulated. Only for the built-in control, also settable via MQTT .../control/min and /max.'],
+				['Window', 'Window contact via MQTT: .../window/state open or close. While open the valve goes to .../window/target (default 0 %) and the control pauses, afterwards it continues.'],
+				['Min. open(%)', 'Smallest opening against flow noise: smaller targets become 0 or this value, the valve opens at this value and closes below half of it. Applies to all sources incl. MQTT and manual. 0 = off.'],
+			];
+			headers.forEach(function (header, col) {
+				setHelpHeader(valvesControlTable.rows[0].cells[col], header[0], header[1]);
+			});
 		}
 		
 		function showBrokerIP() {
@@ -2960,10 +2048,6 @@ Publish on change on server side is not recommended with this option">tValue aft
 		}	
 
 		function showStatusDetailed(enabled) {
-			let vt=id('divValvesTable');
-			if (enabled) vt.setAttribute ("style", "grid-column : span 4;");
-			else
-			vt.setAttribute ("style", "grid-column : span 3;");
 			show_hide_column('valvesTable',3, enabled);
 			show_hide_column('valvesTable',7, enabled);
 			show_hide_column('valvesTable',8, enabled);
@@ -3708,12 +2792,11 @@ Publish on change on server side is not recommended with this option">tValue aft
 			if (homeWarning == 0) {
 				id("homeImg").style.visibility="hidden";
 				id("homeImg").src=tabImageSrc[0];
-				id("sysSTM32-Info").style.visibility="hidden";
+				id("sysSTM32-Info").hidden=true;
 			} else {
 				id("homeImg").style.visibility="visible";
 				id("homeImg").src=tabImageSrc[2];
-				id("sysSTM32-Info").style.visibility="visible";
-				id("sysSTM32-Info").style.background="red";
+				id("sysSTM32-Info").hidden=false;
 				id("sysSTM32-InfoText").textContent="Stm32 version incompatible, min. version should be "+minStmVersion+". Please update STM32";
 			}
 		}
@@ -3723,12 +2806,11 @@ Publish on change on server side is not recommended with this option">tValue aft
 			if (stmFailed == 0) {
 				id("homeImg").style.visibility="hidden";
 				id("homeImg").src=tabImageSrc[0];
-				id("sysSTM32-Error").style.visibility="hidden";
+				id("sysSTM32-Error").hidden=true;
 			} else {
 				id("homeImg").style.visibility="visible";
 				id("homeImg").src=tabImageSrc[2];
-				id("sysSTM32-Error").style.visibility="visible";
-				id("sysSTM32-Error").style.background="red";
+				id("sysSTM32-Error").hidden=false;
 				id("sysSTM32-ErrorText").textContent="Stm32 not responding ! Try reset.";
 			}
 		}
@@ -3737,14 +2819,14 @@ Publish on change on server side is not recommended with this option">tValue aft
 			const cfgValvesTable = id('cfgValvesTable');
 			const cfgValvesControlTable = id('cfgValvesControlTable');
 			for (let row = 1; row<13; row++) {
-				cfgValvesTable.rows[row].cells[0].style.backgroundColor = "";
-				cfgValvesControlTable.rows[row].cells[0].style.backgroundColor = "";
+				setCellState(cfgValvesTable.rows[row].cells[0], "");
+				setCellState(cfgValvesControlTable.rows[row].cells[0], "");
 			}
 			valvesJson.forEach(function(item, index){
 				let thisState = item.state & 0x7f;
 				if ((thisState!=5) && (thisState!=6)) {
-					cfgValvesTable.rows[item.idx].cells[0].style.backgroundColor = "green";
-					cfgValvesControlTable.rows[item.idx].cells[0].style.backgroundColor = "green";
+					setCellState(cfgValvesTable.rows[item.idx].cells[0], "st-ok");
+					setCellState(cfgValvesControlTable.rows[item.idx].cells[0], "st-ok");
 				}
 			});
 		}
@@ -3767,26 +2849,22 @@ Publish on change on server side is not recommended with this option">tValue aft
 					case 4: 
 					case 6:
 					{
-						valvesTable.rows[index+1].cells[0].style.backgroundColor=""; //gray";
-						valvesTable.rows[index+1].cells[0].style.color="white";
+						setCellState(valvesTable.rows[index+1].cells[0], "");
 						break;
 					}
 					case 1:
 					case 5: 
 					{
-						valvesTable.rows[index+1].cells[0].style.backgroundColor="yellow";
-						valvesTable.rows[index+1].cells[0].style.color="blue";
+						setCellState(valvesTable.rows[index+1].cells[0], "st-warn");
 						valvesTable.rows[index+1].cells[0].title="Control disabled";
 						break;
 					}
 					case 3: {
-						valvesTable.rows[index+1].cells[0].style.backgroundColor="green";
-						valvesTable.rows[index+1].cells[0].style.color="white";
+						setCellState(valvesTable.rows[index+1].cells[0], "st-ok");
 						break;
 					}
 					case 7: {
-						valvesTable.rows[index+1].cells[0].style.backgroundColor="red";
-						valvesTable.rows[index+1].cells[0].style.color="white";
+						setCellState(valvesTable.rows[index+1].cells[0], "st-err");
 						valvesTable.rows[index+1].cells[0].title="Valve failed";
 						break;
 					}
@@ -3812,21 +2890,18 @@ Publish on change on server side is not recommended with this option">tValue aft
 				switch (item.state) {
 					case 4 :
 					case 9 : {
-						valvesTable.rows[index+1].cells[4].style.backgroundColor="red";
-						valvesTable.rows[index+1].cells[4].style.color="white";
+						setCellState(valvesTable.rows[index+1].cells[4], "st-err");
 						valvesTable.rows[index+1].cells[4].title="Error : all calibration repetitions failed";
 						valveWarnLevel=2;
 						break;
 					}
 					default : {
 						if (item.cr>0) {
-							valvesTable.rows[index+1].cells[4].style.backgroundColor="yellow";
-							valvesTable.rows[index+1].cells[4].style.color="blue";
+							setCellState(valvesTable.rows[index+1].cells[4], "st-warn");
 							valvesTable.rows[index+1].cells[4].title="Warning : "+item.cr.toString()+" calibration failed";
 							valveWarnLevel=1;
 						} else {
-							valvesTable.rows[index+1].cells[4].style.backgroundColor=""; //gray";
-							valvesTable.rows[index+1].cells[4].style.color="white";
+							setCellState(valvesTable.rows[index+1].cells[4], "");
 						}
 						break;
 					}
@@ -3841,7 +2916,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 					if (item.temp1) {
 						id("tp1-"+(index+1)).textContent=item.temp1;
 						id("tNode1-"+(index+1)).textContent=item.tIdxName1;
-						if (item.temp1==="failed") valvesTable.rows[index+1].cells[colIdx].style.backgroundColor="red"; else valvesTable.rows[index+1].cells[colIdx].style.backgroundColor=""; //gray";
+						setCellState(valvesTable.rows[index+1].cells[colIdx], (item.temp1==="failed") ? "st-err" : "");
 						colIdx++;
 					}
 					else valvesTable.rows[index+1].cells[colIdx++].textContent = "";
@@ -3849,7 +2924,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 					if (item.temp2) {
 						id("tp2-"+(index+1)).textContent=item.temp2;
 						id("tNode2-"+(index+1)).textContent=item.tIdxName2;
-						if (item.temp2==="failed") valvesTable.rows[index+1].cells[colIdx].style.backgroundColor="red"; else valvesTable.rows[index+1].cells[colIdx].style.backgroundColor=""; //gray";
+						setCellState(valvesTable.rows[index+1].cells[colIdx], (item.temp2==="failed") ? "st-err" : "");
 						colIdx++;
 					}
 					else valvesTable.rows[index+1].cells[colIdx++].textContent = "";
@@ -3860,8 +2935,7 @@ Publish on change on server side is not recommended with this option">tValue aft
 					else valvesTable.rows[index+1].cells[colIdx++].textContent = "";
 					if ('tValue' in item) {
 						valvesTable.rows[index+1].cells[colIdx].textContent = item.tValue;
-						if ('tValueFailed' in item) valvesTable.rows[index+1].cells[colIdx].style.backgroundColor="red"; 
-						else  valvesTable.rows[index+1].cells[colIdx].style.backgroundColor=""; //gray";
+						setCellState(valvesTable.rows[index+1].cells[colIdx], ('tValueFailed' in item) ? "st-err" : "");
 					}
 					else valvesTable.rows[index+1].cells[colIdx].textContent = "";
 				}
@@ -3968,10 +3042,10 @@ Publish on change on server side is not recommended with this option">tValue aft
 				tempsJson.forEach(function (item, index) {            
 					tempsTable.rows[index+1].cells[1].textContent = item.name;
 					if (item.temp==="failed") {
-						tempsTable.rows[index+1].cells[2].style.backgroundColor="red"; 
+						setCellState(tempsTable.rows[index+1].cells[2], "st-err");
 						tempWarning =true;
 					} else {
-						tempsTable.rows[index+1].cells[2].style.backgroundColor=""; //gray";
+						setCellState(tempsTable.rows[index+1].cells[2], "");
 					}
 					tempsTable.rows[index+1].cells[2].textContent = item.temp;
 				});
@@ -4008,9 +3082,9 @@ Publish on change on server side is not recommended with this option">tValue aft
 				let TID = id('cfgTID'+row);
 				if (TID.value!="") {
 					if (!findTSIDinData(TID.value)) {
-						TID.style.backgroundColor = "red";
+						TID.classList.add("invalid");
 						result=false;
-					 } else TID.style.backgroundColor = "";
+					 } else TID.classList.remove("invalid");
 				}
 			}
 			return result;
@@ -4076,10 +3150,10 @@ Publish on change on server side is not recommended with this option">tValue aft
 					voltsTable.rows[index+1].cells[2].textContent = item.value;
 					voltsTable.rows[index+1].cells[3].textContent = item.unit;
 					if (item.value==="failed")  {
-						voltsTable.rows[index+1].style.backgroundColor = "red";	
+						setCellState(voltsTable.rows[index+1], "st-err");
 						sensorWarning = true;
 					} else {
-						voltsTable.rows[index+1].style.backgroundColor = "";
+						setCellState(voltsTable.rows[index+1], "");
 					}
 				});
 			}
@@ -4127,9 +3201,9 @@ Publish on change on server side is not recommended with this option">tValue aft
 				let VID = id('cfgVoltID'+row);
 				if (VID.value!="") {
 					if (!findVSIDinData(VID.value)) {
-						VID.style.backgroundColor = "red";
+						VID.classList.add("invalid");
 						result=false;
-					 } else VID.style.backgroundColor = "";
+					 } else VID.classList.remove("invalid");
 				}
 			}
 			return result;
@@ -4206,6 +3280,12 @@ Publish on change on server side is not recommended with this option">tValue aft
 				id("sysSTM32-Version").textContent = dataSystemInfo["stm32version"];
 				id("sysSTM32-ChipId").textContent = dataSystemInfo["stm32ChipId"];
 				showHomeWarningIcon(dataSystemInfo["stm32VFalse"],dataSystemInfo["stm32MinReq"]);
+				// Pushover and email are only available if compiled into the firmware
+				let msgPO = dataSystemInfo["msgPushover"]===1;
+				let msgEmail = dataSystemInfo["msgEmail"]===1;
+				id("msgRowPO").hidden = !msgPO;
+				id("msgRowEmail").hidden = !msgEmail;
+				id("messengerTabFrame").hidden = !(msgPO || msgEmail);
 			}
 		}
 		
@@ -4214,18 +3294,11 @@ Publish on change on server side is not recommended with this option">tValue aft
 			if (dataSystemDynInfo) {
 				id("locTime").textContent = dataSystemDynInfo["locTime"];
 				
-				if (dataSystemDynInfo["sntpActive"]==0) {
-					id("calibDate").style = "display:none;";
-					id ("cfgValvesTableFieldSet1").style = "height:3em;";
-				}
-				else {
-					id("calibDate").style = "display:block;";
-					id ("cfgValvesTableFieldSet1").style = "height:17em;";
-				}
+				id("calibDate").hidden = (dataSystemDynInfo["sntpActive"]==0);
 				id("upTime").textContent = dataSystemDynInfo["upTime"];
 				id("heap").textContent = dataSystemDynInfo["heap"];
 				id("min-heap").textContent = dataSystemDynInfo["minheap"];
-				id("rssi").textContent = dataSystemDynInfo["wifirssi"];
+				id("rssi").textContent = dataSystemDynInfo["wifirssi"]+" dBm";
 				if (_isContains(dataSystemDynInfo, "brokerConnected")) {
 					id("net-broker").style.display="block";
 					id("net-broker-status").textContent=dataSystemDynInfo["brokerConnected"] ? "Connected" : "Not connected"; 
@@ -4317,8 +3390,8 @@ Publish on change on server side is not recommended with this option">tValue aft
 				showDHCP(dataNetConfig["dhcp"]);
 				showSyslogIP();
 				if (dataNetConfig["userName"]==="") {
-					activeSetValvesDisplay = "block";
-					id('activeSetValves').style.display="block";
+					activeSetValvesDisplay = "inline-block";
+					id('activeSetValves').style.display="inline-block";
 					showAllTabs=true;
 					showAllTabsNow();
 				} else {
