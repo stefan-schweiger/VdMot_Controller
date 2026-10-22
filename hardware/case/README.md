@@ -28,14 +28,14 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## How it works
 
-- The board is not screwed. It rests on 10 posts. The connectors along the front and back edge
-  sit just below their openings in the lid (0.5 mm), so the board can not lift there. 4 pins
-  of the lid at the middle and the short edges stop it there, 0.75 mm above the board, they
-  do not press on it. The spots are free of through hole pins below (at least 1.9 mm to the
-  next pin or part) and of components above (at least 1.4 mm), measured on the bounding boxes
-  of the 3D model.
-- The posts do not line up with the mounting holes of the board: the holes are not in the
-  3D model, so they are not used.
+- The board is screwed to the base through two of its mounting holes (between the power
+  terminal and X12, and below the WT32 module), M3 x 6 into heat set inserts. It also rests on
+  9 support posts at spots without through hole pins below (at least 1.9 mm to the next pin or
+  part, measured on the bounding boxes of the 3D model).
+- The hole positions were measured on a real board, they are not in the 3D model
+  (`BOARD_SCREWS` in the script).
+- The connectors along the front and back edge sit just below their openings in the lid
+  (0.5 mm), so the lid has no pins pressing on the board.
 - Below the board there are 5 mm to the floor. The longest pins of the 3D model (valve jacks)
   stick out 1.9 mm, so trim all leads you solder to 3 mm or less.
 - Small stops at the left and right board edges keep it from sliding sideways, the openings
@@ -59,7 +59,9 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 ## Hardware
 
 - 4 x M3 x 8 socket head screws (DIN 912) for the lid.
-- 4 x heat set inserts M3, 4 mm long (e.g. ruthex M3 short, RX-M3Sx4.0) for the base posts.
+- 2 x M3 x 6 socket head screws for the board.
+- 6 x heat set inserts M3, 4 mm long (e.g. ruthex M3 short, RX-M3Sx4.0): 4 for the lid screws,
+  2 for the board screws.
   The holes are 4.0 mm with a small chamfer and 7.1 mm deep. Press the inserts in with a
   soldering iron until they are flush with or slightly below the top of the post, an insert
   that sticks out keeps the lid from closing flat.
@@ -73,7 +75,9 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
    This matters because the case was made from the C3 model and the C4 revision moved the
    valve jacks closer to the board edge.
 2. Screw the base to the wall.
-3. Put the board into the base, valve jacks to the front (the side with the numbers).
+3. Pull the WT32-ETH01 module off its headers, put the board into the base (valve jacks to the
+   front, the side with the numbers) and screw it down with the two M3 x 6. The second screw
+   sits below the module. Plug the module back in.
 4. Put the lid on and screw it to the base.
 
 ![fit check frame](images/fitcheck.png)

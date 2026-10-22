@@ -68,10 +68,15 @@ PLUG_OPENING_TOP = {"X13": 10.4, "X18": 10.4, "X17": 10.4, "X19": 10.4}
 POSTS = [(3.0, 20.5), (3.0, 45.0), (3.0, 83.0), (59.5, 23.5), (101.75, 23.75),
          (150.0, 24.75), (152.75, 46.25), (118.75, 83.0), (137.75, 43.25), (49.75, 71.5)]
 POST_R = 2.5
-# the connectors along the front and back edge sit just below their openings, so the board can
-# lift at most CONN_CLEAR there. The pins of the lid only stop the middle and the short edges,
-# with a gap, they do not press on the board.
-CLAMPS = [(3.0, 45.0), (152.75, 46.25), (101.75, 23.75), (49.75, 71.5)]
+# the board is screwed to the base through two of its mounting holes, M3 x 6 into heat set inserts
+# (same inserts as for the lid screws). Hole centers measured on a real board:
+# 35 mm from the right / 6.5 mm from the back edge, and 24.5 mm from the left / 45 mm from the back edge
+BOARD_SCREWS = [(BOARD_W - 35.0, BOARD_D - 6.5), (24.5, BOARD_D - 45.0)]
+BOARD_SCREW_POST_D = 7.6   # 0.8 mm to the pins of X12 below the board
+
+# pins of the lid above the board, not needed with the board screwed down: the connectors along
+# the front and back edge sit just below their openings and keep the edges down
+CLAMPS = []
 CLAMP_R = 2.0
 CLAMP_GAP = 0.75     # gap between the clamp pins and the board top
 
@@ -182,7 +187,11 @@ def roof_label(text, x, y, height=LABEL_H, rot=0):
 def make_base():
     shell = box(xo0, xo1, yo0, yo1, zf0, zs).cut(box(xi0, xi1, yi0, yi1, zf, zs + 1))
     parts = [shell]
-    parts += [cyl(x, y, POST_R, zf - 0.01, zb) for x, y in POSTS]
+    # support posts, except where a screw post is
+    free = [(x, y) for x, y in POSTS
+            if all(((x - sx) ** 2 + (y - sy) ** 2) ** 0.5 > POST_R + BOARD_SCREW_POST_D / 2 + 1 for sx, sy in BOARD_SCREWS)]
+    parts += [cyl(x, y, POST_R, zf - 0.01, zb) for x, y in free]
+    parts += [cyl(x, y, BOARD_SCREW_POST_D / 2, zf - 0.01, zb) for x, y in BOARD_SCREWS]
     for x in screw_x:
         for y in SCREW_Y:
             parts.append(cyl(x, y, BASE_POST_D / 2, zf - 0.01, zs))
@@ -202,6 +211,12 @@ def make_base():
             if INSERT_CHAMFER > 0:
                 r = SCREW_PILOT_D / 2
                 holes.append(Part.makeCone(r, r + INSERT_CHAMFER, INSERT_CHAMFER + 0.01, V(x, y, zs - INSERT_CHAMFER)))
+    # inserts for the board screws, from the top of the post
+    for x, y in BOARD_SCREWS:
+        holes.append(cyl(x, y, SCREW_PILOT_D / 2, zf0 + 1.0, zb + 1))
+        if INSERT_CHAMFER > 0:
+            r = SCREW_PILOT_D / 2
+            holes.append(Part.makeCone(r, r + INSERT_CHAMFER, INSERT_CHAMFER + 0.01, V(x, y, zb - INSERT_CHAMFER)))
         for y in MOUNT_Y:
             holes.append(cyl(x, y, MOUNT_HOLE_D / 2, zf0 - 1, zf + 1))
     return base.cut(Part.makeCompound(holes))
