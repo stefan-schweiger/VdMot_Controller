@@ -45,6 +45,10 @@ unsigned int learning_movements = LEARN_AFTER_MOVEMENTS_DEFAULT;
 
 unsigned int reset_request = 0;
 
+// learning runs start after the first target change (keeps the controller calm after startup)
+// or right away after a calibration request, targets are held back while a calibration is pending
+static byte firstchange = 0;
+
 int16_t app_setup (void) { 
 
   // init valve data
@@ -83,7 +87,6 @@ int16_t app_setup (void) {
 }
 
 int16_t app_loop (void) {
-  static byte firstchange = 0;
   static unsigned int lastvalve = 0;
   static unsigned int testvlvindex = 0;
 
@@ -287,6 +290,7 @@ int16_t app_set_learntime(uint32_t time) {
 int16_t app_set_valvelearning(uint16_t valve) {
 
   if(valve < ACTUATOR_COUNT) {
+    firstchange = 1;
    // myvalvemots[valve].actual_position = 0;     // fake some position deviation
     myvalvemots[valve].status = VLV_STATE_PRESENT; //VLV_STATE_UNKNOWN;
     myvalvemots[valve].calibration = true;
@@ -297,6 +301,7 @@ int16_t app_set_valvelearning(uint16_t valve) {
     return 0;
   }
   else if (valve == 255) {
+    firstchange = 1;
     // update all valves
     for(uint8_t xx=0;xx<ACTUATOR_COUNT;xx++){
       if (myvalvemots[xx].connected) {
