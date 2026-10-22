@@ -28,7 +28,7 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## How it works
 
-- The board is not screwed. It rests on 10 posts and is held down by 10 pins of the lid on the
+- The board is not screwed. It rests on 10 posts and is held down by 9 pins of the lid on the
   same spots, so it is clamped between them. The spots are free of through hole pins below
   (at least 1.9 mm to the next pin or part) and of components above (at least 1.4 mm),
   measured on the bounding boxes of the 3D model.

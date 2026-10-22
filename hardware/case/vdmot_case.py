@@ -68,7 +68,8 @@ PLUG_OPENING_TOP = {"X13": 10.4, "X18": 10.4, "X17": 10.4, "X19": 10.4}
 POSTS = [(3.0, 20.5), (3.0, 45.0), (3.0, 83.0), (59.5, 23.5), (101.75, 23.75),
          (150.0, 24.75), (152.75, 46.25), (118.75, 83.0), (137.75, 43.25), (49.75, 71.5)]
 POST_R = 2.5
-CLAMPS = POSTS
+# no clamp at (137.75, 43.25): it interrupted the roof vents and touched a component on a real board
+CLAMPS = [p for p in POSTS if p != (137.75, 43.25)]
 CLAMP_R = 2.0
 CLAMP_GAP = 0.0      # gap between clamp pins and the board top, raise if the lid does not close
 
