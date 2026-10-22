@@ -28,10 +28,12 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## How it works
 
-- The board is not screwed. It rests on 10 posts and is held down by 9 pins of the lid on the
-  same spots, so it is clamped between them. The spots are free of through hole pins below
-  (at least 1.9 mm to the next pin or part) and of components above (at least 1.4 mm),
-  measured on the bounding boxes of the 3D model.
+- The board is not screwed. It rests on 10 posts. The connectors along the front and back edge
+  sit just below their openings in the lid (0.5 mm), so the board can not lift there. 4 pins
+  of the lid at the middle and the short edges stop it there, 0.75 mm above the board, they
+  do not press on it. The spots are free of through hole pins below (at least 1.9 mm to the
+  next pin or part) and of components above (at least 1.4 mm), measured on the bounding boxes
+  of the 3D model.
 - The posts do not line up with the mounting holes of the board: the holes are not in the
   3D model, so they are not used.
 - Below the board there are 5 mm to the floor. The longest pins of the 3D model (valve jacks)
@@ -92,8 +94,8 @@ All sizes are parameters at the top of the script, for example:
 - `PLUG_OPENING_TOP`: height of the openings for the pluggable terminals (X13 power, X18 1-wire).
   The screw plugs stay outside the case, but their latches reach into it just above the header,
   so these openings are 2 mm higher than the header needs (10.9 mm above the board).
-- `CLAMP_GAP`: gap between the clamp pins and the board, a small negative value (e.g. -0.2)
-  holds the board tighter, a positive one helps if the lid does not close.
+- `CLAMPS`, `CLAMP_GAP`: positions of the pins of the lid and their gap above the board
+  (0.75 mm). 0 or a small negative value (e.g. -0.2) clamps the board.
 - `INNER_H`, `SIDE_MARGIN`, `WALL`, `STANDOFF`: size of the case.
 - `SCREW_PILOT_D`, `MOUNT_Y`, `SCREW_Y`: screws.
 - `FONT`, `TITLE`, `LABEL_H`: labels (the default font path is for macOS).

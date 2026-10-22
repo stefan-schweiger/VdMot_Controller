@@ -68,10 +68,12 @@ PLUG_OPENING_TOP = {"X13": 10.4, "X18": 10.4, "X17": 10.4, "X19": 10.4}
 POSTS = [(3.0, 20.5), (3.0, 45.0), (3.0, 83.0), (59.5, 23.5), (101.75, 23.75),
          (150.0, 24.75), (152.75, 46.25), (118.75, 83.0), (137.75, 43.25), (49.75, 71.5)]
 POST_R = 2.5
-# no clamp at (137.75, 43.25): it interrupted the roof vents and touched a component on a real board
-CLAMPS = [p for p in POSTS if p != (137.75, 43.25)]
+# the connectors along the front and back edge sit just below their openings, so the board can
+# lift at most CONN_CLEAR there. The pins of the lid only stop the middle and the short edges,
+# with a gap, they do not press on the board.
+CLAMPS = [(3.0, 45.0), (152.75, 46.25), (101.75, 23.75), (49.75, 71.5)]
 CLAMP_R = 2.0
-CLAMP_GAP = 0.0      # gap between clamp pins and the board top, raise if the lid does not close
+CLAMP_GAP = 0.75     # gap between the clamp pins and the board top
 
 # lid screws: M3 x 8 socket head (DIN 912) into heat set inserts in the base posts, default for
 # ruthex M3 short (RX-M3Sx4.0, 4 mm long): hole 4.0 mm, 7.1 mm deep, chamfer at the top.
