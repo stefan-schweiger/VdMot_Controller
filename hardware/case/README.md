@@ -24,7 +24,8 @@ Print the fit check frame first.
 | `vdmot_case.step` | base and lid as STEP for other CAD programs |
 | `vdmot_case.py` | FreeCAD script that generates all of the above |
 
-Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
+Outer size 175.4 x 90.8 x 37.6 mm with rounded corners, it fits on a 180 x 180 mm bed
+(Bambu Lab A1 mini) with about 2 mm to spare on each side.
 
 ## How it works
 
@@ -52,7 +53,11 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## Printing
 
-- PETG or ASA. Manifold cabinets get warm in winter, PLA softens at 55-60 °C.
+- PLA is fine for low temperature floor heating (supply up to about 40 °C), as long as the case
+  does not sit on the supply pipes or next to the boiler. PLA softens at 55-60 °C, PETG or ASA
+  for warmer places.
+- PETG on a large flat part tends to lift at the corners: clean the plate with dish soap,
+  70-80 °C bed, no part cooling for the first layers, glue stick on textured PEI.
 - Base: floor down. Lid and fit check frame: upside down (top on the bed). No supports needed.
 - 0.2 mm layers, 3-4 walls, 15-20 % infill.
 
@@ -66,7 +71,7 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
   soldering iron until they are flush with or slightly below the top of the post, an insert
   that sticks out keeps the lid from closing flat.
   Without inserts: set `SCREW_PILOT_D = 2.6` and `INSERT_CHAMFER = 0` and use self tapping screws.
-- 4 x screws up to 4 mm with a head of at most 8 mm for the wall mounting (holes 4.5 mm).
+- 4 x screws up to 3.5 mm with a head of at most 7 mm for the wall mounting (holes 4.0 mm).
 
 ## Assembly
 
@@ -100,7 +105,7 @@ All sizes are parameters at the top of the script, for example:
   so these openings are 2 mm higher than the header needs (10.9 mm above the board).
 - `CLAMPS`, `CLAMP_GAP`: positions of the pins of the lid and their gap above the board
   (0.75 mm). 0 or a small negative value (e.g. -0.2) clamps the board.
-- `INNER_H`, `SIDE_MARGIN`, `WALL`, `STANDOFF`: size of the case.
+- `INNER_H`, `SIDE_MARGIN`, `WALL`, `STANDOFF`, `CORNER_R`: size and corners of the case.
 - `SCREW_PILOT_D`, `MOUNT_Y`, `SCREW_Y`: screws.
 - `FONT`, `TITLE`, `LABEL_H`: labels (the default font path is for macOS).
 

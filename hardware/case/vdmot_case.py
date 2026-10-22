@@ -25,11 +25,12 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() 
 
 BOARD_W, BOARD_D, BOARD_T = 155.6, 86.0, 1.6   # board size and thickness
 
-WALL = 2.2           # wall thickness
+WALL = 2.0           # wall thickness
 FLOOR = 2.0          # floor thickness
 ROOF = 2.0           # lid top thickness
 GAP = 0.4            # clearance between board edge and wall
-SIDE_MARGIN = 9.0    # space left/right of the board for the lid screws and wall mounting holes
+SIDE_MARGIN = 7.5    # space left/right of the board for the lid screws and wall mounting holes
+CORNER_R = 5.0       # radius of the vertical outer corners, less warping when printing
 STANDOFF = 5.0       # floor to board bottom, through hole pins of the 3D model stick out 1.9 mm, trim leads to <= 3 mm
 INNER_H = 27.0       # board top to the inside of the lid, the LAN jack is 25.6 mm high
 SPLIT = -0.5         # height of the joint between base and lid, relative to the board top
@@ -86,20 +87,21 @@ CLAMP_GAP = 0.75     # gap between the clamp pins and the board top
 SCREW_PILOT_D = 4.0
 INSERT_CHAMFER = 0.5
 SCREW_CLEAR_D = 3.4
-SCREW_HEAD_D = 6.4
-LID_BOSS_D = 8.5     # bosses and posts touch the side walls
-BASE_POST_D = 8.5
+SCREW_HEAD_D = 6.0   # DIN 912 M3 head is 5.5 mm
+LID_BOSS_D = 7.6     # bosses and posts touch the side walls
+BASE_POST_D = 7.6
 SCREW_Y = (8.0, BOARD_D - 8.0)
 
-# wall mounting holes through the floor, in the side margins
-MOUNT_HOLE_D = 4.5
-MOUNT_Y = (26.0, BOARD_D - 26.0)
+# wall mounting holes through the floor, in the side margins, for screws up to 3.5 mm with a head
+# of at most 7 mm
+MOUNT_HOLE_D = 4.0
+MOUNT_Y = (24.0, BOARD_D - 24.0)
 
 # alignment: the inner part of the base side walls rises as a lip into a rebate of the lid side walls
 LIP_T, LIP_H, LIP_GAP = 1.0, 3.0, 0.2
 
 # stops at the left and right board edges, so the board can not slide sideways (y ranges)
-EDGE_STOPS_Y = ((30.0, 40.0), (50.0, 58.0))
+EDGE_STOPS_Y = ((30.0, 40.0), (45.0, 53.0))
 EDGE_STOP_W = 1.6
 
 # ventilation slots
@@ -135,6 +137,17 @@ def lip_y():
 
 def box(x0, x1, y0, y1, z0, z1):
     return Part.makeBox(x1 - x0, y1 - y0, z1 - z0, V(x0, y0, z0))
+
+
+def rbox(x0, x1, y0, y1, z0, z1, r):
+    """box with rounded vertical edges"""
+    b = box(x0, x1, y0, y1, z0, z1)
+    if r <= 0:
+        return b
+    vertical = [e for e in b.Edges
+                if abs(e.Vertexes[0].Point.x - e.Vertexes[1].Point.x) < 1e-6
+                and abs(e.Vertexes[0].Point.y - e.Vertexes[1].Point.y) < 1e-6]
+    return b.makeFillet(r, vertical)
 
 
 def cyl(x, y, r, z0, z1):
@@ -185,7 +198,7 @@ def roof_label(text, x, y, height=LABEL_H, rot=0):
 # ---------------------------------------------------------------- base
 
 def make_base():
-    shell = box(xo0, xo1, yo0, yo1, zf0, zs).cut(box(xi0, xi1, yi0, yi1, zf, zs + 1))
+    shell = rbox(xo0, xo1, yo0, yo1, zf0, zs, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zf, zs + 1, CORNER_R - WALL))
     parts = [shell]
     # support posts, except where a screw post is
     free = [(x, y) for x, y in POSTS
@@ -225,7 +238,7 @@ def make_base():
 # ---------------------------------------------------------------- lid
 
 def make_lid():
-    shell = box(xo0, xo1, yo0, yo1, zs, zr1).cut(box(xi0, xi1, yi0, yi1, zs - 1, zr))
+    shell = rbox(xo0, xo1, yo0, yo1, zs, zr1, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zs - 1, zr, CORNER_R - WALL))
     parts = [shell]
     for x in screw_x:
         for y in SCREW_Y:
