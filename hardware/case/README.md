@@ -87,8 +87,8 @@ All sizes are parameters at the top of the script, for example:
 - `CONNECTORS`: openings and labels. The openings for X17 (RS485) and X19 (CAN) are closed,
   set them to `True` if these terminals are fitted.
 - `PLUG_OPENING_TOP`: height of the openings for the pluggable terminals (X13 power, X18 1-wire).
-  The screw plugs stay outside the case, but their latches reach into it above the header,
-  so these openings go up to 15 mm above the board.
+  The screw plugs stay outside the case, but their latches reach into it just above the header,
+  so these openings are 2 mm higher than the header needs (10.9 mm above the board).
 - `CLAMP_GAP`: gap between the clamp pins and the board, a small negative value (e.g. -0.2)
   holds the board tighter, a positive one helps if the lid does not close.
 - `INNER_H`, `SIDE_MARGIN`, `WALL`, `STANDOFF`: size of the case.
