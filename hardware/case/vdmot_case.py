@@ -57,6 +57,10 @@ CONNECTORS = [
     ("X11", "back",  140.31, 151.51, 0.0, 11.5, "11", True),
 ]
 
+# the pluggable terminals (header on the board, screw plug outside the case) need a higher opening:
+# the latches of the plugs reach into the case above the header. Opening height above the board top.
+PLUG_OPENING_TOP = {"X13": 15.0, "X18": 15.0, "X17": 15.0, "X19": 15.0}
+
 # support posts below the board and clamp pins of the lid above it, on the same spots, so the board
 # is held between them. Taken from the 3D model: the posts keep >= 1.9 mm to through hole pins and
 # parts below the board, the clamps >= 1.4 mm to components above it (bounding boxes)
@@ -209,6 +213,7 @@ def make_lid():
     for name, side, x0, x1, z0, z1, label, enabled in CONNECTORS:
         if not enabled:
             continue
+        z1 = max(z1, PLUG_OPENING_TOP.get(name, z1))
         if side == "front":
             cuts.append(box(x0 - CONN_CLEAR, x1 + CONN_CLEAR, yo0 - 1, yi0 + 0.5, zs - 1, z1 + CONN_CLEAR))
         else:
