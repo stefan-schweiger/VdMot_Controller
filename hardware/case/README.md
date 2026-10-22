@@ -56,10 +56,13 @@ Outer size 178.8 x 91.2 x 37.6 mm, the printer bed needs at least 180 mm.
 
 ## Hardware
 
-- 4 x M3 x 8 screws for the lid. The script default (pilot hole 2.6 mm) is for self tapping
-  screws for plastic. For heat set inserts set `SCREW_PILOT_D` to the insert size (e.g. 4.0)
-  and use inserts of at most 5 mm length.
-- 4 x screws up to 4 mm with a head of at most 8 mm for the wall mounting.
+- 4 x M3 x 8 socket head screws (DIN 912) for the lid.
+- 4 x heat set inserts M3, 4 mm long (e.g. ruthex M3 short, RX-M3Sx4.0) for the base posts.
+  The holes are 4.0 mm with a small chamfer and 7.1 mm deep. Press the inserts in with a
+  soldering iron until they are flush with or slightly below the top of the post, an insert
+  that sticks out keeps the lid from closing flat.
+  Without inserts: set `SCREW_PILOT_D = 2.6` and `INSERT_CHAMFER = 0` and use self tapping screws.
+- 4 x screws up to 4 mm with a head of at most 8 mm for the wall mounting (holes 4.5 mm).
 
 ## Assembly
 

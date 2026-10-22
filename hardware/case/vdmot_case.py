@@ -72,8 +72,11 @@ CLAMPS = POSTS
 CLAMP_R = 2.0
 CLAMP_GAP = 0.0      # gap between clamp pins and the board top, raise if the lid does not close
 
-# lid screws M3, self tapping into the base (pilot 2.6) or into heat set inserts (e.g. 4.0)
-SCREW_PILOT_D = 2.6
+# lid screws: M3 x 8 socket head (DIN 912) into heat set inserts in the base posts, default for
+# ruthex M3 short (RX-M3Sx4.0, 4 mm long): hole 4.0 mm, 7.1 mm deep, chamfer at the top.
+# For self tapping screws without inserts use SCREW_PILOT_D = 2.6 and INSERT_CHAMFER = 0
+SCREW_PILOT_D = 4.0
+INSERT_CHAMFER = 0.5
 SCREW_CLEAR_D = 3.4
 SCREW_HEAD_D = 6.4
 LID_BOSS_D = 8.5     # bosses and posts touch the side walls
@@ -193,6 +196,9 @@ def make_base():
     for x in screw_x:
         for y in SCREW_Y:
             holes.append(cyl(x, y, SCREW_PILOT_D / 2, zf0 + 1.0, zs + 1))
+            if INSERT_CHAMFER > 0:
+                r = SCREW_PILOT_D / 2
+                holes.append(Part.makeCone(r, r + INSERT_CHAMFER, INSERT_CHAMFER + 0.01, V(x, y, zs - INSERT_CHAMFER)))
         for y in MOUNT_Y:
             holes.append(cyl(x, y, MOUNT_HOLE_D / 2, zf0 - 1, zf + 1))
     return base.cut(Part.makeCompound(holes))
