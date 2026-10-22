@@ -24,8 +24,10 @@ Print the fit check frame first.
 | `vdmot_case.step` | base and lid as STEP for other CAD programs |
 | `vdmot_case.py` | FreeCAD script that generates all of the above |
 
-Outer size 175.4 x 90.8 x 37.6 mm with rounded corners, it fits on a 180 x 180 mm bed
-(Bambu Lab A1 mini) with about 2 mm to spare on each side.
+Outer size 175.4 x 92.0 x 37.6 mm with rounded corners, it fits on a 180 x 180 mm bed
+(Bambu Lab A1 mini) with about 2 mm to spare on each side. The front wall is 3 mm thick and the
+valve jack openings have rounded top corners, so the fingers between them do not break easily;
+side walls 2 mm, back wall 2.2 mm (the terminal plugs have to reach their headers).
 
 ## How it works
 

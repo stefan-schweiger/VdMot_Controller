@@ -25,7 +25,9 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() 
 
 BOARD_W, BOARD_D, BOARD_T = 155.6, 86.0, 1.6   # board size and thickness
 
-WALL = 2.0           # wall thickness
+WALL = 2.0           # left and right walls, they set the length of the case
+WALL_FRONT = 3.0     # front wall, the fingers between the valve jack openings break easily if thin
+WALL_BACK = 2.2      # back wall, thicker would keep the terminal plugs from reaching their headers
 FLOOR = 2.0          # floor thickness
 ROOF = 2.0           # lid top thickness
 GAP = 0.4            # clearance between board edge and wall
@@ -35,6 +37,7 @@ STANDOFF = 5.0       # floor to board bottom, through hole pins of the 3D model 
 INNER_H = 27.0       # board top to the inside of the lid, the LAN jack is 25.6 mm high
 SPLIT = -0.5         # height of the joint between base and lid, relative to the board top
 CONN_CLEAR = 0.5     # clearance around connectors in the lid openings
+OPENING_R = 1.0      # radius of the top corners of the valve jack openings, strengthens the fingers between them
 
 # connectors that need an opening in the lid: (name, side, x0, x1, z0, z1, label, enabled)
 # side "front" = y 0 (valve jacks), "back" = y 86, x/z from the 3D model, z relative to the board top
@@ -121,7 +124,8 @@ FITCHECK_H = 14.0    # height of the fit check frame above the board top
 
 xi0, xi1 = -GAP - SIDE_MARGIN, BOARD_W + GAP + SIDE_MARGIN     # inner faces
 yi0, yi1 = -GAP, BOARD_D + GAP
-xo0, xo1, yo0, yo1 = xi0 - WALL, xi1 + WALL, yi0 - WALL, yi1 + WALL
+xo0, xo1, yo0, yo1 = xi0 - WALL, xi1 + WALL, yi0 - WALL_FRONT, yi1 + WALL_BACK
+INNER_R = max(CORNER_R - max(WALL, WALL_FRONT, WALL_BACK), 0.5)   # inner corner radius
 zb = -BOARD_T                    # board bottom
 zf = zb - STANDOFF               # floor top
 zf0 = zf - FLOOR                 # case bottom
@@ -198,7 +202,7 @@ def roof_label(text, x, y, height=LABEL_H, rot=0):
 # ---------------------------------------------------------------- base
 
 def make_base():
-    shell = rbox(xo0, xo1, yo0, yo1, zf0, zs, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zf, zs + 1, CORNER_R - WALL))
+    shell = rbox(xo0, xo1, yo0, yo1, zf0, zs, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zf, zs + 1, INNER_R))
     parts = [shell]
     # support posts, except where a screw post is
     free = [(x, y) for x, y in POSTS
@@ -238,7 +242,7 @@ def make_base():
 # ---------------------------------------------------------------- lid
 
 def make_lid():
-    shell = rbox(xo0, xo1, yo0, yo1, zs, zr1, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zs - 1, zr, CORNER_R - WALL))
+    shell = rbox(xo0, xo1, yo0, yo1, zs, zr1, CORNER_R).cut(rbox(xi0, xi1, yi0, yi1, zs - 1, zr, INNER_R))
     parts = [shell]
     for x in screw_x:
         for y in SCREW_Y:
@@ -253,7 +257,14 @@ def make_lid():
             continue
         z1 = max(z1, PLUG_OPENING_TOP.get(name, z1))
         if side == "front":
-            cuts.append(box(x0 - CONN_CLEAR, x1 + CONN_CLEAR, yo0 - 1, yi0 + 0.5, zs - 1, z1 + CONN_CLEAR))
+            opening = box(x0 - CONN_CLEAR, x1 + CONN_CLEAR, yo0 - 1, yi0 + 0.5, zs - 1, z1 + CONN_CLEAR)
+            if OPENING_R > 0:
+                top = z1 + CONN_CLEAR
+                edges = [e for e in opening.Edges
+                         if all(abs(v.Point.z - top) < 1e-6 for v in e.Vertexes)
+                         and abs(e.Vertexes[0].Point.x - e.Vertexes[1].Point.x) < 1e-6]
+                opening = opening.makeFillet(OPENING_R, edges)
+            cuts.append(opening)
         else:
             cuts.append(box(x0 - CONN_CLEAR, x1 + CONN_CLEAR, yi1 - 0.5, yo1 + 1, zs - 1, z1 + CONN_CLEAR))
     # rebates in the left and right walls for the alignment lips of the base
