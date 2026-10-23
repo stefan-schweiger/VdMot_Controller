@@ -104,6 +104,7 @@ struct CMD_REQUEST {
   CmdFn fn;
   uint8_t valve;          // index, 255 = all valves
   uint8_t arg;            // discoveryHA: action, STM32 update: command
+  bool restart;           // saveCfg: the network settings changed
   char file[96];
 };
 
@@ -149,7 +150,7 @@ static void restart (const CMD_REQUEST& cmd)
 
 static void saveConfig (const CMD_REQUEST& cmd)
 {  
-  VdmConfig.writeConfig(true);
+  VdmConfig.saveConfig(cmd.restart);
 }
 
 static void resetConfig (const CMD_REQUEST& cmd)
@@ -503,7 +504,10 @@ static String handleCmd(JsonObject doc)
     }
     cmd.arg=doc["actionHA"].isNull() ? HA_DISCOVERY_ONLY : doc["actionHA"].as<uint8_t>();
     strlcpy(cmd.file, doc["file"] | "", sizeof(cmd.file));
+    // the page shows the answer: saved or restarting
+    if (c.fn==&saveConfig) cmd.restart=VdmConfig.networkChanged();
     if (!queueCmd(cmd)) return "{\"res\":\"busy\"}";
+    if (c.fn==&saveConfig) return cmd.restart ? "{\"res\":\"ok\",\"restart\":true}" : "{\"res\":\"ok\",\"restart\":false}";
     return resOk;
   }
   return "";

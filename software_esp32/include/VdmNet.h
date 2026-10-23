@@ -100,6 +100,7 @@ public:
   void checkNet();
   void checkWifi();
   void startBroker();
+  void restartBroker();
   void mqttBroker();
   void startSysLog();
   void configTzTime(const char* tz, const char* server1, const char* server2=NULL, const char* server3=NULL);

@@ -61,6 +61,7 @@ public:
   bool taskExists (taskid_t taskId);
   void yieldTask (uint16_t ms);
   void startMqtt(uint32_t interval);
+  void stopMqtt();
   void startApp();
   void startStm32Ota(uint8_t command,String thisFileName);
   void startServices();

@@ -282,6 +282,15 @@ typedef struct
   VDM_VALVES_RANGE_CONFIG valvesRangeConfig;
 } CONFIG_FLASH;
 
+// settings as applied, a save applies only what has changed
+typedef struct {
+  VDM_NETWORK_CONFIG netConfig;
+  VDM_PROTOCOL_CONFIG protConfig;
+  VDM_SYSTEM_CONFIG systemConfig;
+  VDM_SYSTEM_TIME_ZONE_CONFIG timeZoneConfig;
+  VDM_VALVES_CONFIG valvesConfig;
+} APPLIED_CONFIG;
+
 typedef struct {
   time_t lastCalib; 
 } MISC_VALUES;
@@ -385,6 +394,8 @@ public:
   void clearConfig();
   void readConfig();
   void writeConfig(bool reboot=false);
+  void saveConfig(bool restart);
+  bool networkChanged();
   void resetConfig (bool reboot=false);
   void restoreConfig (bool reboot=false);
   void writeValvesControlConfig(bool reboot=false, bool restartTask=true);
@@ -409,6 +420,11 @@ public:
 
   MISC_VALUES miscValues;
   HEATCFG_VALUES heatValues;
+private:
+  void applyConfig();
+  void rememberApplied();
+  VDM_NETWORK_CONFIG startNetConfig;    // the network is only set up at the start
+  APPLIED_CONFIG appliedConfig;
 };
 
 extern CVdmConfig VdmConfig;

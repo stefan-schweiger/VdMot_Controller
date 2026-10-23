@@ -45,6 +45,7 @@
 #include "Services.h"
 #include "stmApp.h"
 #include "PIControl.h"
+#include "VdmNet.h"
 
 CVdmConfig VdmConfig;
 
@@ -67,6 +68,8 @@ void CVdmConfig::init()
 {
   setDefault();
   readConfig();
+  startNetConfig=configFlash.netConfig;
+  rememberApplied();
 }
 
 void CVdmConfig::resetConfig (bool reboot)
@@ -457,6 +460,60 @@ void CVdmConfig::writeConfig(bool reboot)
   prefs.end();
 
   if (reboot) Services.restartSystem();
+}
+
+// the network settings need a restart, the other settings are applied by saveConfig()
+bool CVdmConfig::networkChanged()
+{
+  const VDM_NETWORK_CONFIG& s=startNetConfig;
+  const VDM_NETWORK_CONFIG& c=configFlash.netConfig;
+  return ((s.eth_wifi!=c.eth_wifi) || (s.dhcpEnabled!=c.dhcpEnabled) || (s.staticIp!=c.staticIp) ||
+          (s.mask!=c.mask) || (s.gateway!=c.gateway) || (s.dnsIp!=c.dnsIp) ||
+          (strcmp(s.ssid,c.ssid)!=0) || (strcmp(s.pwd,c.pwd)!=0));
+}
+
+// writes the settings posted before, restarts for new network settings, otherwise applies them
+// most settings are read where they are used, the time server, syslog and MQTT are set up again
+void CVdmConfig::saveConfig(bool restart)
+{
+  writeConfig(false);
+  if (restart) {
+    Services.restartSystem();
+    return;
+  }
+  applyConfig();
+}
+
+void CVdmConfig::applyConfig()
+{
+  const VDM_NETWORK_CONFIG& net=configFlash.netConfig;
+  const VDM_NETWORK_CONFIG& appliedNet=appliedConfig.netConfig;
+
+  if ((strcmp(net.timeServer,appliedNet.timeServer)!=0) ||
+      (strcmp(configFlash.timeZoneConfig.tzCode,appliedConfig.timeZoneConfig.tzCode)!=0)) {
+    VdmNet.setupNtp();
+  }
+  if ((net.syslogLevel!=appliedNet.syslogLevel) || (net.syslogIp!=appliedNet.syslogIp) ||
+      (net.syslogPort!=appliedNet.syslogPort)) {
+    VdmNet.syslogStarted=false;
+    VdmNet.startSysLog();
+  }
+  // the topics, the client id (station name) and the subscriptions (valve names) are set when connecting
+  if ((memcmp(&configFlash.protConfig,&appliedConfig.protConfig,sizeof(configFlash.protConfig))!=0) ||
+      (strcmp(configFlash.systemConfig.stationName,appliedConfig.systemConfig.stationName)!=0) ||
+      (memcmp(configFlash.valvesConfig.valveConfig,appliedConfig.valvesConfig.valveConfig,sizeof(configFlash.valvesConfig.valveConfig))!=0)) {
+    VdmNet.restartBroker();
+  }
+  rememberApplied();
+}
+
+void CVdmConfig::rememberApplied()
+{
+  memcpy(&appliedConfig.netConfig,&configFlash.netConfig,sizeof(appliedConfig.netConfig));
+  memcpy(&appliedConfig.protConfig,&configFlash.protConfig,sizeof(appliedConfig.protConfig));
+  memcpy(&appliedConfig.systemConfig,&configFlash.systemConfig,sizeof(appliedConfig.systemConfig));
+  memcpy(&appliedConfig.timeZoneConfig,&configFlash.timeZoneConfig,sizeof(appliedConfig.timeZoneConfig));
+  memcpy(&appliedConfig.valvesConfig,&configFlash.valvesConfig,sizeof(appliedConfig.valvesConfig));
 }
 
 void CVdmConfig::writeMiscValues()

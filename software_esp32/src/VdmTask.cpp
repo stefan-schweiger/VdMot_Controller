@@ -93,6 +93,14 @@ void CVdmTask::startMqtt(uint32_t interval)
     }
 }
 
+void CVdmTask::stopMqtt()
+{
+    if (taskIdMqtt!=TASKMGR_INVALIDID) {
+        taskManager.cancelTask(taskIdMqtt);
+        taskIdMqtt=TASKMGR_INVALIDID;
+    }
+}
+
 void CVdmTask::startApp()
 {
     if (taskIdStm32Ota!=TASKMGR_INVALIDID) {

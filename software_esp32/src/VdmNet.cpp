@@ -281,6 +281,8 @@ void CVdmNet::setupNtp()
     UART_DBG.println("Get time from server "+String(VdmConfig.configFlash.netConfig.timeServer)+":"+String(sntp_enabled()));
     configTzTime(VdmConfig.configFlash.timeZoneConfig.tzCode ,VdmConfig.configFlash.netConfig.timeServer);
     VdmSystem.getLocalTime(&startTimeinfo);
+  } else if (sntp_enabled()) {
+    sntp_stop();
   }
 }
 
@@ -296,6 +298,17 @@ void CVdmNet::startBroker()
       break;
     }
   }
+}
+
+// connects again with new settings, runs on the main loop like the mqtt task
+void CVdmNet::restartBroker()
+{
+  if (dataBrokerIsStarted) {
+    VdmTask.stopMqtt();
+    Mqtt.disconnect();
+    dataBrokerIsStarted=false;
+  }
+  startBroker();
 }
 
 void CVdmNet::mqttBroker()
