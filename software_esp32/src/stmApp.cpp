@@ -109,6 +109,7 @@ CStmApp::CStmApp()
     stmFailed=false;
     keptRunning=false;
     targetRead=255;
+    for (uint8_t i=0;i<TEMP_SENSORS_COUNT;i++) tempsId[i].temperature=-500;
 }
 
 void  CStmApp::app_setup() {
@@ -308,6 +309,7 @@ void CStmApp::scanTemps()
     tempsCount=0;
     for (uint8_t i=0;i<TEMP_SENSORS_COUNT;i++) {
         memset(tempsId[i].id,0x0,sizeof(tempsId[i].id));
+        tempsId[i].temperature=-500;
     }
     app_cmd(APP_PRE_SETONEWIRESEARCH);
 }
@@ -751,6 +753,7 @@ void  CStmApp::app_check_data()
                     char* ps=argptr[1];
                     for (uint8_t idx=0; idx<tempsPrivCount;idx++) {
                         if ((cmdptr=strchr(ps,','))!=NULL) *cmdptr='\0';
+                        if (strcmp(tempsId[idx].id,ps)!=0) tempsId[idx].temperature=-500;
                         strlcpy(tempsId[idx].id,ps,sizeof(tempsId[idx].id));
                         if (cmdptr==NULL) break;
                         ps=cmdptr+1;
@@ -771,13 +774,15 @@ void  CStmApp::app_check_data()
                     syslog.log(LOG_DEBUG,"STMApp:one wire temp data "+String(argptr[0])+":"+String(argptr[1]));
                 } 
                 strncpy(tempsId[tempIndex].id,argptr[0],sizeof(tempsId[tempIndex].id));
+                int16_t sensorValue=atoi(argptr[1]);
+                // for finding a sensor in the settings, it is shown with its temperature
+                tempsId[tempIndex].temperature=(sensorValue<=-500) ? -500 : ConvertCF(sensorValue);
 
                 int8_t idx=findTempID(argptr[0]);
                 if (idx>=0) {
                     memset(temps[idx].id,0x0,sizeof(temps[idx].id)); 
                     strncpy(temps[idx].id,argptr[0],sizeof(temps[idx].id));
-                    int16_t cValue=atoi(argptr[1]);
-                    temps[idx].temperature=ConvertCF(cValue)+VdmConfig.configFlash.tempsConfig.tempConfig[idx].offset;
+                    temps[idx].temperature=ConvertCF(sensorValue)+VdmConfig.configFlash.tempsConfig.tempConfig[idx].offset;
                 } 
                 tempIndex++;
                 

@@ -68,6 +68,7 @@ typedef struct  {
 
 typedef struct  {
   char id[25];
+  int16_t temperature;          // last reading without offset, also of sensors not assigned, -500 = none
 } TEMPID_STRUC;
 
 typedef struct  {
