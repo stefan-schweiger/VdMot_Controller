@@ -687,6 +687,15 @@ void CMqtt::publish_valves () {
                     publishValue(topicstr, valstr, sizeof(topicstr));
                     lastValveValues[x].target=StmApp.actuators[x].target_position;
                 }
+                // actual position reported by the STM32, differs from the target with a maximum opening
+                // (also ends the constant republishing, the change check compares this value)
+                if ((lastValveValues[x].position!=StmApp.actuators[x].actual_position) || forcePublish || lastValveValues[x].publishTimeOut) {
+                    topicstr[len] = '\0';
+                    strlcat(topicstr, "/position",sizeof(topicstr));
+                    itoa(StmApp.actuators[x].actual_position, valstr, 10);
+                    publishValue(topicstr, valstr, sizeof(topicstr));
+                    lastValveValues[x].position=StmApp.actuators[x].actual_position;
+                }
                 // state
                 if ((lastValveValues[x].state!=valveStates[x].thisState) || forcePublish || lastValveValues[x].publishTimeOut) {
                     topicstr[len] = '\0';

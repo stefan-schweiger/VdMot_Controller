@@ -256,6 +256,7 @@ example: VdMotFloor/valves/Kitchen/target
 |maintopic/valves/valvesubtopic/tValue|subscription|actual temperature value for integrated valve position control|
 |maintopic/valves/valvesubtopic/tTarget|subscription|temperature setpoint for integrated valve position control|
 |maintopic/valves/valvesubtopic/actual|publish|actual position of valve (0...100 %)|
+|maintopic/valves/valvesubtopic/position|publish|actual valve position reported by the STM32 (0...100 %), differs from the target if a maximum opening is set|
 |maintopic/valves/valvesubtopic/state|publish|actual state of valve (IDLE, OPENING, CLOSING, BLOCKING, OPENCIRCUIT, UNKNOWN)|
 |maintopic/valves/valvesubtopic/meancur|publish|mean current of valve (mA)|
 |maintopic/valves/valvesubtopic/temperature|publish|temperature of linked 1-wire sensor (1/10 °C)|
