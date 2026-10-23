@@ -188,6 +188,11 @@ typedef struct {
   uint8_t minOpening[ACTUATOR_COUNT];     // minimum opening of the valve in %, smaller openings are avoided, 0 = off
 } VDM_VALVES_CONTROL2_CONFIG;
 
+// stored with its own nvs key as well
+typedef struct {
+  uint8_t maxOpening[ACTUATOR_COUNT];     // largest opening of the valve in % for hydraulic balancing, targets are scaled to it, 100 = off
+} VDM_VALVES_CONTROL3_CONFIG;
+
 
 typedef struct {
   char name[11];
@@ -277,6 +282,7 @@ typedef struct
   VDM_VALVES_CONTROL_INIT valvesControlInit;
   VDM_VALVES_CONTROL1_CONFIG valvesControl1Config;
   VDM_VALVES_CONTROL2_CONFIG valvesControl2Config;
+  VDM_VALVES_CONTROL3_CONFIG valvesControl3Config;
 } CONFIG_FLASH;
 
 typedef struct {
@@ -331,6 +337,7 @@ typedef struct {
 #define nvsValvesControl            "valvesCtrl"
 #define nvsValvesControl1           "valvesCtrl1"
 #define nvsValvesControl2           "valvesCtrl2"
+#define nvsValvesControl3           "valvesCtrl3"
 #define nvsValvesControlHeatControl "vCtrlHeat"
 #define nvsValvesControlParkPos     "vCtrlParkPos"
 #define nvsValvesControlInit        "vCtrlInit"

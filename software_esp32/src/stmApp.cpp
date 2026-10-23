@@ -173,6 +173,8 @@ int16_t CStmApp::getTOffset(uint8_t tIdx)
 }
 
 // target position that is sent to the STM32
+// with a maximum opening M (hydraulic balancing) every target is scaled to 0..M, also for linked
+// valves and targets set by hand or MQTT
 // some valves make flow noise when they are opened only a little, with a minimum opening m
 // targets between 1 and m-1 are sent as 0 or m: an open valve stays at m until the target drops
 // below m/2, a closed valve stays closed until the target reaches m
@@ -180,6 +182,8 @@ uint8_t CStmApp::effectiveTarget(uint8_t x)
 {
     uint8_t target = actuators[x].target_position;
     if (target>100) target=100;      // the STM32 ignores targets above 100 % without answer
+    uint8_t maxOpening = VdmConfig.configFlash.valvesControl3Config.maxOpening[x];
+    if ((maxOpening>0) && (maxOpening<100)) target = (uint8_t) ((target*maxOpening+50)/100);
     uint8_t minOpening = VdmConfig.configFlash.valvesControl2Config.minOpening[x];
     if ((minOpening==0) || (target==0) || (target>=minOpening)) return (target);
 

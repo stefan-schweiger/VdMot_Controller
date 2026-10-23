@@ -149,6 +149,7 @@ void CVdmConfig::clearConfig()
     configFlash.valvesControlInit.valveControlInit[i].tTarget=20;
     configFlash.valvesControl1Config.valveControl1Config[i].deadband=0.0;
     configFlash.valvesControl2Config.minOpening[i]=0;
+    configFlash.valvesControl3Config.maxOpening[i]=100;
   }
   configFlash.valvesControlConfig.heatControl=0;
   configFlash.valvesControlConfig.parkingPosition=10;
@@ -281,6 +282,12 @@ void CVdmConfig::readConfig()
     }
     if (prefs.isKey(nvsValvesControl2)) {
       prefs.getBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
+    }
+    if (prefs.isKey(nvsValvesControl3)) {
+      prefs.getBytes(nvsValvesControl3, (void *) configFlash.valvesControl3Config.maxOpening, sizeof(configFlash.valvesControl3Config.maxOpening));
+      for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+        if ((configFlash.valvesControl3Config.maxOpening[i]==0) || (configFlash.valvesControl3Config.maxOpening[i]>100)) configFlash.valvesControl3Config.maxOpening[i]=100;
+      }
     }
     prefs.end();
   }
@@ -456,6 +463,7 @@ void CVdmConfig::writeValvesControlConfig(bool reboot, bool restartTask)
   prefs.putBytes(nvsValvesControl1, (void *) configFlash.valvesControl1Config.valveControl1Config, sizeof(configFlash.valvesControl1Config.valveControl1Config));
   prefs.putBytes(nvsValvesControlInit, (void *) configFlash.valvesControlInit.valveControlInit, sizeof(configFlash.valvesControlInit.valveControlInit));
   prefs.putBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
+  prefs.putBytes(nvsValvesControl3, (void *) configFlash.valvesControl3Config.maxOpening, sizeof(configFlash.valvesControl3Config.maxOpening));
   prefs.putUChar (nvsValvesControlHeatControl,configFlash.valvesControlConfig.heatControl);
   prefs.putUChar (nvsValvesControlParkPos,configFlash.valvesControlConfig.parkingPosition);
   prefs.end();
@@ -664,6 +672,10 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           if (!doc["valves"][i]["minOpen"].isNull()) {
             int minOpen=doc["valves"][i]["minOpen"];
             if ((minOpen>=0) && (minOpen<=100)) configFlash.valvesControl2Config.minOpening[idx]=minOpen;
+          }
+          if (!doc["valves"][i]["maxOpen"].isNull()) {
+            int maxOpen=doc["valves"][i]["maxOpen"];
+            if ((maxOpen>=1) && (maxOpen<=100)) configFlash.valvesControl3Config.maxOpening[idx]=maxOpen;
           }
         }
       }
