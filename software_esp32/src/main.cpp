@@ -50,6 +50,7 @@
 #include "Messenger.h"
 #include "VdmTask.h"
 #include "RtcRam.h"
+#include "stmApp.h"
 
 uint32_t * StackPtrAtStart;
 uint32_t * StackPtrEnd;
@@ -84,8 +85,14 @@ void setup(void) {
 
   UART_DBG.println("readingCnt read "+String(readingCnt));
   Stm32.STM32ota_setup();
-  uint8_t rr=esp_reset_reason();
-  if (rr!=1) {  // not at power on reset
+  esp_reset_reason_t rr=esp_reset_reason();
+  // a restart for new network settings or an ESP32 update keeps the STM32 running, so the valves keep
+  // their positions and learned strokes, the ESP32 takes over its targets (StmApp.app_setup)
+  // every other start resets the STM32 as before (except power on, it starts with the ESP32): a crash
+  // or watchdog of the ESP32 may have left it in an unknown state, and "Reboot" restarts everything
+  StmApp.keptRunning=(rr==ESP_RST_SW) && (keepStmRunning==KEEP_STM_RUNNING);
+  keepStmRunning=0;
+  if ((rr!=ESP_RST_POWERON) && !StmApp.keptRunning) {
     Stm32.ResetSTM32(false);
   }
   #ifdef EnvDevelop

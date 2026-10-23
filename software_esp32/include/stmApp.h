@@ -205,6 +205,7 @@ public:
   bool waitEEPFinished;
   bool oneWireAllRead;
   bool stmFailed;
+  bool keptRunning;       // the STM32 was not reset at the start of the ESP32
   
 private:
   void appHandler();
@@ -216,6 +217,9 @@ private:
   int16_t getTOffset(uint8_t tIdx);
   bool checkNewTarget();
   uint8_t effectiveTarget(uint8_t x);
+  uint8_t mapTarget(uint8_t x, uint8_t target);
+  uint8_t logicalTarget(uint8_t x, uint8_t stmTarget);
+  bool readTargetsFromStm();
 
   bool fastQueueMode;
 
@@ -224,6 +228,7 @@ private:
   // target sent to the STM32, the mirror is updated when the STM32 acknowledges it
   uint8_t pendingTargetValve;
   uint8_t pendingTargetValue;
+  uint8_t targetRead;     // valve of the last target read from the STM32
   uint8_t getindex;
 
   uint8_t timeout;

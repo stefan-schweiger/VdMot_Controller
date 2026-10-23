@@ -61,7 +61,8 @@ public:
   void runOnce();
   void runOnceDelayed10();
   void runOnceDelayed60();
-  void restartSystem(bool waitQueueFinished=true);
+  void restartSystem(bool waitQueueFinished=true, bool keepStm=false);
+  void restartNow();
   void restartStmApp(uint32_t ms);
   void checkServiceValves();
   void checkDS18();
@@ -69,6 +70,7 @@ public:
   void checkGetNtp();
   void GetLastTargetValues();
   bool serviceValvesStarted;
+  bool restartKeepsStm;
 private:
   TEMPSTATES tempStates[TEMP_SENSORS_COUNT];
 };

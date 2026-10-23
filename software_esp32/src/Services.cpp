@@ -48,7 +48,7 @@
 #include "Queue.h"
 #include "Messenger.h"
 #include "PIControl.h"
-#include "stmApp.h"
+#include "RtcRam.h"
 
 
 CServices Services;
@@ -56,6 +56,7 @@ CServices Services;
 CServices::CServices()
 {
   serviceValvesStarted=false;
+  restartKeepsStm=false;
   for (uint8_t x = 0;x<TEMP_SENSORS_COUNT;x++) 
     tempStates[x].timeOut=0;  
 }
@@ -198,11 +199,12 @@ void CServices::GetLastTargetValues()
   }
 }
 
-void CServices::restartSystem(bool waitQueueFinished) {
+// keepStm: the STM32 keeps running with its valve positions and learned strokes, see setup()
+void CServices::restartSystem(bool waitQueueFinished, bool keepStm) {
   #ifdef EnvDevelop
     UART_DBG.println("restart System ");
   #endif
-  
+  restartKeepsStm=keepStm;
   if (StmApp.waitEEPFinished) {
     StmApp.eepState=EEP_REQUEST; 
   }
@@ -215,7 +217,7 @@ void CServices::restartSystem(bool waitQueueFinished) {
                   UART_DBG.println("wait for finish queue timeout, restart now");
                 #endif
                 delay (1000);
-                ESP.restart();
+                Services.restartNow();
             });
         VdmTask.taskIdwaitForFinishQueue = taskManager.scheduleFixedRate(500, [] {
           int restartNow = 0;
@@ -232,7 +234,7 @@ void CServices::restartSystem(bool waitQueueFinished) {
               #endif
               StmApp.eepState=EEP_IDLE;
                 VdmTask.taskIdResetSystem = taskManager.scheduleOnce(3000, [] {
-                  ESP.restart();
+                  Services.restartNow();
                 });
                 VdmTask.deleteTask(VdmTask.taskIdwaitForFinishQueue);
           }
@@ -242,9 +244,14 @@ void CServices::restartSystem(bool waitQueueFinished) {
         UART_DBG.println("normal restart");
       #endif
       VdmTask.taskIdResetSystem = taskManager.scheduleOnce(2000, [] {
-              ESP.restart();
+              Services.restartNow();
             });
     }
+}
+
+void CServices::restartNow() {
+  keepStmRunning = restartKeepsStm ? KEEP_STM_RUNNING : 0;
+  ESP.restart();
 }
 
 void CServices::restartStmApp(uint32_t ms) {

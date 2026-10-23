@@ -62,6 +62,7 @@
 #include "Hash.h"
 #include <AsyncWebServer_WT32_ETH01.h>
 #include "WT32AsyncOTA.h"
+#include "Services.h"
 #include "FS.h"
 
 
@@ -165,9 +166,10 @@ void CWT32AsyncOTA::begin(AsyncWebServer *server, bool (*authorized)(AsyncWebSer
 }
 
        
+// on the main loop after the answer was sent, the STM32 keeps running
 void  CWT32AsyncOTA::restart() 
 {
-    ESP.restart();
+    Services.restartSystem(false, true);
 }
 
    

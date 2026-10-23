@@ -478,7 +478,7 @@ void CVdmConfig::saveConfig(bool restart)
 {
   writeConfig(false);
   if (restart) {
-    Services.restartSystem();
+    Services.restartSystem(true, true);
     return;
   }
   applyConfig();

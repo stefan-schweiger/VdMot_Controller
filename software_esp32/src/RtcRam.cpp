@@ -3,3 +3,4 @@
 
 RTC_NOINIT_ATTR int readingCnt;
 RTC_NOINIT_ATTR PI_CONTROL_RTCS piControlRtcs;
+RTC_NOINIT_ATTR uint32_t keepStmRunning;

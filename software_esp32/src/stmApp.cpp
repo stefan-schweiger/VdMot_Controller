@@ -107,6 +107,8 @@ CStmApp::CStmApp()
     fastGetOneWire=false;
     oneWireAllRead=false;
     stmFailed=false;
+    keptRunning=false;
+    targetRead=255;
 }
 
 void  CStmApp::app_setup() {
@@ -139,6 +141,45 @@ void  CStmApp::app_setup() {
         syslog.log(LOG_DEBUG, "stmApp: application setup finished");
     }
     UART_STM32.println("123456"); // dummy send
+
+    if (keptRunning && !readTargetsFromStm()) {
+        // no answer, the STM32 may hang: reset it like on any other start
+        if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
+            syslog.log(LOG_DEBUG, "stmApp: kept STM32 does not answer, reset it");
+        }
+        keptRunning=false;
+        memset(target_position_mirror,0,sizeof(target_position_mirror));
+        for (uint8_t x = 0;x<ACTUATOR_COUNT;x++) actuators[x].target_position = 0;
+        Stm32.ResetSTM32(false);
+    }
+}
+
+// the STM32 kept running during the restart of the ESP32: its targets become the targets of the ESP32, so
+// the valves stay where they are until the controller or MQTT sets new targets, true if all valves answered
+bool CStmApp::readTargetsFromStm()
+{
+    uint8_t answered=0;
+    delay(50);                          // the dummy line may have produced an answer
+    while (UART_STM32.available()) UART_STM32.read();
+    buflen=0;
+    bufptr=buffer;
+    for (uint8_t x=0; x<ACTUATOR_COUNT; x++) {
+        targetRead=255;
+        app_comm_send(APP_PRE_GETTARGETPOS,&x);
+        uint32_t start=millis();
+        while ((targetRead!=x) && ((millis()-start)<200)) {
+            delay(5);
+            app_check_data();
+        }
+        if (targetRead==x) answered++;
+    }
+    #ifdef EnvDevelop
+        UART_DBG.println("targets read from the kept STM32 : "+String(answered));
+    #endif
+    if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
+        syslog.log(LOG_DEBUG, "stmApp: targets read from the kept STM32 : "+String(answered));
+    }
+    return (answered==ACTUATOR_COUNT);
 }
 
 void  CStmApp::setupStartPosition(uint8_t thisStartPosition) 
@@ -179,7 +220,11 @@ int16_t CStmApp::getTOffset(uint8_t tIdx)
 // (e.g. minimum flow for the boiler)
 uint8_t CStmApp::effectiveTarget(uint8_t x)
 {
-    uint8_t target = actuators[x].target_position;
+    return (mapTarget(x, actuators[x].target_position));
+}
+
+uint8_t CStmApp::mapTarget(uint8_t x, uint8_t target)
+{
     if (target>100) target=100;      // the STM32 ignores targets above 100 % without answer
     int from = VdmConfig.configFlash.valvesRangeConfig.rangeFrom[x];
     int to = VdmConfig.configFlash.valvesRangeConfig.rangeTo[x];
@@ -189,6 +234,16 @@ uint8_t CStmApp::effectiveTarget(uint8_t x)
     }
     if (target==0) return (VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x] ? 0 : (uint8_t) from);
     return ((uint8_t) (from + ((to-from)*target+50)/100));
+}
+
+// target of the ESP32 for a target of the STM32: the smallest target that is mapped closest to it
+uint8_t CStmApp::logicalTarget(uint8_t x, uint8_t stmTarget)
+{
+    uint8_t best=0;
+    for (uint8_t target=1; target<=100; target++) {
+        if (abs(mapTarget(x,target)-stmTarget) < abs(mapTarget(x,best)-stmTarget)) best=target;
+    }
+    return (best);
 }
 
 bool CStmApp::checkNewTarget() {
@@ -590,7 +645,13 @@ void  CStmApp::app_check_data()
             else if(memcmp(APP_PRE_GETTARGETPOS,cmd,5) == 0) {
                 if(argcnt == 2) {
                     uint8_t idx=atoi(argptr[0]);
-                    if (idx < ACTUATOR_COUNT) actuators[idx].target_position = atoi(argptr[1]);
+                    uint8_t target=atoi(argptr[1]);
+                    if ((idx < ACTUATOR_COUNT) && (target<=100)) {
+                        // the STM32 has the mapped target already, the mirror keeps it from being sent again
+                        target_position_mirror[idx] = target;
+                        actuators[idx].target_position = logicalTarget(idx,target);
+                        targetRead = idx;
+                    }
                 }
                 appState=APP_IDLE;
             }
@@ -929,7 +990,8 @@ void  CStmApp::app_check_data()
             }
             if(argcnt >= 3) {
                 motorChars.startOnPower=atoi(argptr[2]);
-                setupStartPosition(motorChars.startOnPower);
+                // a kept STM32 is not at its start position, its targets were read at the start
+                if (!keptRunning) setupStartPosition(motorChars.startOnPower);
             }
             if(argcnt >= 4) {
                 motorChars.noOfMinCount=atoi(argptr[3]);
@@ -1004,6 +1066,7 @@ void CStmApp::appHandler()
                 VdmSystem.setSystemState(systemStateError,systemMsgSTMReset);
                 appTimeOuts=0; 
                 Stm32.ResetSTM32(true);
+                keptRunning=false;
                 // the STM32 restarts with its start position, send all targets again
                 // before the init has finished the targets are not valid yet, they are set with the motor chars
                 if (stmInitState==STM_INIT_FINISHED) memset(target_position_mirror,0xFF,sizeof(target_position_mirror));
