@@ -119,8 +119,13 @@ String CVdmSystem::localTime() {
   String sTime="Failed to obtain time";
   String upTime;
   String sLastCalib;
+  time_t now;
+  // called by the web server: no waiting for the time like getLocalTime(), its yieldTask() would run the
+  // tasks of the main loop in the web server task
   if (VdmNet.sntpActive) {
-    if(getLocalTime(&timeinfo)) {
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    if (timeinfo.tm_year > (2016 - 1900)) {
       strftime (buf, sizeof(buf), "%A, %B %d.%Y %H:%M:%S", &timeinfo);
       sTime = String(buf);
     }

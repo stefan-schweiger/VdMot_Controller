@@ -79,6 +79,7 @@ extern "C" {
 
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
+#include <mutex>
 
 AsyncWebServer server(80);
 
@@ -93,100 +94,139 @@ CServerServices ServerServices;
 
 // server handles --------------------------------------------------
 
+// the /cmd actions run on the main loop like the other tasks and not in the web server task: they write
+// the nvs, start and stop tasks or talk to the STM32 and the broker, and the web server task is reset by
+// the task watchdog if a request takes 5 s
+struct CMD_REQUEST;
+typedef void (*CmdFn)(const CMD_REQUEST& cmd);
 
-void restart (JsonObject doc)
+struct CMD_REQUEST {
+  CmdFn fn;
+  uint8_t valve;          // index, 255 = all valves
+  uint8_t arg;            // discoveryHA: action, STM32 update: command
+  char file[96];
+};
+
+#define CMD_QUEUE_SIZE 8
+
+static CMD_REQUEST cmdQueue[CMD_QUEUE_SIZE];
+static uint8_t cmdFirst = 0;
+static uint8_t cmdCount = 0;
+static std::mutex cmdMutex;
+
+static void runQueuedCmds()
+{
+  CMD_REQUEST cmd;
+  while (true) {
+    {
+      std::lock_guard<std::mutex> lock(cmdMutex);
+      if (cmdCount==0) return;
+      cmd=cmdQueue[cmdFirst];
+      cmdFirst=(cmdFirst+1)%CMD_QUEUE_SIZE;
+      cmdCount--;
+    }
+    cmd.fn(cmd);
+  }
+}
+
+// queues the command for the main loop, in the order of the requests, false if too many are waiting
+static bool queueCmd(const CMD_REQUEST& cmd)
+{
+  {
+    std::lock_guard<std::mutex> lock(cmdMutex);
+    if (cmdCount>=CMD_QUEUE_SIZE) return false;
+    cmdQueue[(cmdFirst+cmdCount)%CMD_QUEUE_SIZE]=cmd;
+    cmdCount++;
+  }
+  taskManager.execute(runQueuedCmds);
+  return true;
+}
+
+static void restart (const CMD_REQUEST& cmd)
 {  
   Services.restartSystem(false);
 }
 
-void writeConfig (JsonObject doc)
+static void saveConfig (const CMD_REQUEST& cmd)
 {  
   VdmConfig.writeConfig(true);
 }
 
-void resetConfig (JsonObject doc)
+static void resetConfig (const CMD_REQUEST& cmd)
 {  
   VdmConfig.resetConfig(true);
 }
 
-void restoreConfig (JsonObject doc)
+static void restoreConfig (const CMD_REQUEST& cmd)
 {  
   VdmConfig.restoreConfig(true);
 }
 
-void setClearFS (JsonObject doc)
+static void setClearFS (const CMD_REQUEST& cmd)
 {  
   VdmTask.startClearFS();
 }
 
-void setGetFS (JsonObject doc)
+static void setGetFS (const CMD_REQUEST& cmd)
 {  
   VdmTask.startGetFS();
 }
 
-void fileDelete (JsonObject doc)
+static void fileDelete (const CMD_REQUEST& cmd)
 {  
-  if (!doc["file"].isNull()) {
-    VdmSystem.fileDelete(doc["file"]);
-  }
+  if (strlen(cmd.file)>0) VdmSystem.fileDelete(cmd.file);
 }
 
-void scanTSensors (JsonObject doc)
+static void scanTSensors (const CMD_REQUEST& cmd)
 {  
   StmApp.scanTemps();
 }
 
-void valvesCalibration (JsonObject doc)
+static void valvesCalibration (const CMD_REQUEST& cmd)
 {  
-  uint8_t index=255;
-  if (!doc["valve"].isNull()) {
-    index=(doc["valve"].as<uint8_t>());
-    if (index!=255) index--;
-  }
-  StmApp.valvesCalibration(index);
+  StmApp.valvesCalibration(cmd.valve);
 }
 
-void valvesAssembly (JsonObject doc)
+static void valvesAssembly (const CMD_REQUEST& cmd)
 {  
-  uint8_t index=255;
-  if (!doc["valve"].isNull()) {
-    index=(doc["valve"].as<uint8_t>());
-    if (index!=255) index--;
-  }
-  StmApp.valvesAssembly(index);
+  StmApp.valvesAssembly(cmd.valve);
 }
 
-void valvesDetect (JsonObject doc)
+static void valvesDetect (const CMD_REQUEST& cmd)
 {  
   StmApp.valvesDetect();
 }
 
-void writeValvesControl (JsonObject doc)
+static void writeValvesControl (const CMD_REQUEST& cmd)
 {  
   VdmConfig.writeValvesControlConfig(false,VdmTask.restartPiTask);
   Mqtt.forceReconnect=true;
 }
 
-void mqttReconnect (JsonObject doc)
+static void mqttReconnect (const CMD_REQUEST& cmd)
 {  
   Mqtt.disconnect();
 }
 
-void sysLogSave (JsonObject doc)
+static void sysLogSave (const CMD_REQUEST& cmd)
 {  
   VdmConfig.writeSysLogValues();
   VdmNet.syslogStarted=false;
   VdmNet.startSysLog();
 }
 
-void discoveryHA (JsonObject doc)
+static void discoveryHA (const CMD_REQUEST& cmd)
 {  
   if (Mqtt.hadState==HAD_IDLE) {
-    if (!doc["actionHA"].isNull()) 
-      Mqtt.actionHA = doc["actionHA"];
-    else Mqtt.actionHA = HA_DISCOVERY_ONLY;
+    Mqtt.actionHA = (ACTION_HA) cmd.arg;
     Mqtt.hadState=HAD_STARTED;
   }
+}
+
+static void stmUpdate (const CMD_REQUEST& cmd)
+{
+  if (cmd.arg==0) VdmTask.startStm32Ota(STM32OTA_START,cmd.file);
+  if (cmd.arg==1) VdmTask.startStm32Ota(STM32OTA_STARTBLANK,cmd.file);
 }
 
 void CServerServices::postSetValve (JsonObject doc)
@@ -435,31 +475,38 @@ void handleStmUpdStatus(AsyncWebServerRequest *request)
 }
 
 
-bool handleCmd(JsonObject doc) 
+// queues the action of a /cmd request, the answer is empty for an unknown action
+static String handleCmd(JsonObject doc) 
 { 
-  typedef void (*fp)(JsonObject doc);
-  fp  fpList[] = {&restart,&writeConfig,&resetConfig,&restoreConfig,&fileDelete,&setGetFS,
-                  &setClearFS,&scanTSensors,&valvesCalibration,&valvesAssembly,&valvesDetect,&writeValvesControl,&mqttReconnect,&sysLogSave,&discoveryHA} ;
+  static const struct {
+    const char* name;
+    CmdFn fn;
+  } cmds[] = {
+    {"reboot",&restart}, {"saveCfg",&saveConfig}, {"resetCfg",&resetConfig}, {"restoreCfg",&restoreConfig},
+    {"fDelete",&fileDelete}, {"getFS",&setGetFS}, {"clearFS",&setClearFS}, {"scanTempSensors",&scanTSensors},
+    {"vCalib",&valvesCalibration}, {"vAssembly",&valvesAssembly}, {"valvesDetect",&valvesDetect},
+    {"vCtrlSave",&writeValvesControl}, {"mqttReconnect",&mqttReconnect}, {"sysLogSave",&sysLogSave},
+    {"discoveryHA",&discoveryHA}
+  };
 
-  char const *names[]=  {"reboot", "saveCfg","resetCfg","restoreCfg","fDelete","getFS",
-                        "clearFS","scanTempSensors","vCalib","vAssembly","valvesDetect","vCtrlSave","mqttReconnect","sysLogSave","discoveryHA",NULL};
-  char const **p;
-  bool found = false;
+  const char* action=doc["action"] | "";
+  for (const auto& c : cmds) {
+    if (strcmp(action, c.name)!=0) continue;
 
-  if (!doc["action"].isNull()) {
-    const char* d=doc["action"] | "";
-    uint8_t i=0;
-  
-    for (p=names; *p!=NULL; p++) {
-      if (strcmp(d, *p)==0) {
-        fpList[i](doc);
-        found=true;
-        break;
-      }
-      i++;
+    CMD_REQUEST cmd={};
+    cmd.fn=c.fn;
+    // valve is 1 based, 255 = all valves
+    cmd.valve=255;
+    if (!doc["valve"].isNull()) {
+      cmd.valve=doc["valve"].as<uint8_t>();
+      if (cmd.valve!=255) cmd.valve--;
     }
+    cmd.arg=doc["actionHA"].isNull() ? HA_DISCOVERY_ONLY : doc["actionHA"].as<uint8_t>();
+    strlcpy(cmd.file, doc["file"] | "", sizeof(cmd.file));
+    if (!queueCmd(cmd)) return "{\"res\":\"busy\"}";
+    return resOk;
   }
-  return (found);
+  return "";
 }
 
 void handleUploadFile(AsyncWebServerRequest *request, const String& filename, size_t index, 
@@ -506,18 +553,17 @@ CServerServices::CServerServices()
 
 void CServerServices::stmDoUpdate(JsonObject doc)
 {
-
-  if (!doc["file"].isNull()) {
-    if (!doc["cmd"].isNull()) {
+  if (!doc["file"].isNull() && !doc["cmd"].isNull()) {
+    CMD_REQUEST cmd={};
     String thisFileName = doc["file"] | "";
     if (!thisFileName.startsWith("/")) thisFileName = "/"+thisFileName;
-    uint8_t command = doc["cmd"];
     #ifdef EnvDevelop
-      UART_DBG.println("file : "+thisFileName + " Command "+ String(command));
+      UART_DBG.println("file : "+thisFileName + " Command "+ String(doc["cmd"].as<uint8_t>()));
     #endif
-    if (command==0) VdmTask.startStm32Ota(STM32OTA_START,thisFileName);
-    if (command==1) VdmTask.startStm32Ota(STM32OTA_STARTBLANK,thisFileName);
-  }
+    cmd.fn=&stmUpdate;
+    cmd.arg=doc["cmd"];
+    strlcpy(cmd.file, thisFileName.c_str(), sizeof(cmd.file));
+    queueCmd(cmd);
   }
 }
 
@@ -657,8 +703,9 @@ AsyncCallbackJsonWebHandler* valvesControlCfgHandler = new AsyncCallbackJsonWebH
     if (!checkAuthorized(request)) return;
     if (json.is<JsonObject>()) {
       JsonObject&& jsonObj = json.as<JsonObject>();
-      if (handleCmd (jsonObj))
-        request->send(200, aj, resOk);
+      String answer=handleCmd (jsonObj);
+      if (answer.length()>0)
+        request->send(200, aj, answer);
       else request->send(200, tp, "Cmd not found");
     } else request->send(400, tp, "Not an object");
   });
