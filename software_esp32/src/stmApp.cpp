@@ -173,25 +173,22 @@ int16_t CStmApp::getTOffset(uint8_t tIdx)
 }
 
 // target position that is sent to the STM32
-// with a maximum opening M (hydraulic balancing) every target is scaled to 0..M, also for linked
-// valves and targets set by hand or MQTT
-// some valves make flow noise when they are opened only a little, with a minimum opening m
-// targets between 1 and m-1 are sent as 0 or m: an open valve stays at m until the target drops
-// below m/2, a closed valve stays closed until the target reaches m
+// every target (controller, linked valve, manual, MQTT, park position) is mapped to the valve range:
+// 1..100 % become from..to, so "to" limits the flow of the loop (hydraulic balancing) and "from" avoids
+// small openings with flow noise, 0 % closes the valve or, if it can not close, keeps it at "from"
+// (e.g. minimum flow for the boiler)
 uint8_t CStmApp::effectiveTarget(uint8_t x)
 {
     uint8_t target = actuators[x].target_position;
     if (target>100) target=100;      // the STM32 ignores targets above 100 % without answer
-    uint8_t maxOpening = VdmConfig.configFlash.valvesControl3Config.maxOpening[x];
-    if ((maxOpening>0) && (maxOpening<100)) target = (uint8_t) ((target*maxOpening+50)/100);
-    uint8_t minOpening = VdmConfig.configFlash.valvesControl2Config.minOpening[x];
-    if ((minOpening==0) || (target==0) || (target>=minOpening)) return (target);
-
-    uint8_t closeBelow = (minOpening+1)/2;
-    uint8_t lastSent = target_position_mirror[x];
-    bool isOpen = (lastSent<=100) ? (lastSent>0) : (target>=closeBelow);     // unknown after STM32 reset
-    if (isOpen && (target>=closeBelow)) return (minOpening);
-    return (0);
+    int from = VdmConfig.configFlash.valvesRangeConfig.rangeFrom[x];
+    int to = VdmConfig.configFlash.valvesRangeConfig.rangeTo[x];
+    if ((to>100) || (from>=to)) {
+        from = 0;
+        to = 100;
+    }
+    if (target==0) return (VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x] ? 0 : (uint8_t) from);
+    return ((uint8_t) (from + ((to-from)*target+50)/100));
 }
 
 bool CStmApp::checkNewTarget() {

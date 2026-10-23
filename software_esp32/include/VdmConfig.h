@@ -183,15 +183,13 @@ typedef struct {
   VDM_VALVE_CONTROL_INIT valveControlInit[ACTUATOR_COUNT];
 } VDM_VALVES_CONTROL_INIT;
 
-// stored with its own nvs key, so the layout of the other valve control blobs stays unchanged
+// valve range, every target is mapped to it, each array stored with its own nvs key so the layout
+// of the other valve control blobs stays unchanged
 typedef struct {
-  uint8_t minOpening[ACTUATOR_COUNT];     // minimum opening of the valve in %, smaller openings are avoided, 0 = off
-} VDM_VALVES_CONTROL2_CONFIG;
-
-// stored with its own nvs key as well
-typedef struct {
-  uint8_t maxOpening[ACTUATOR_COUNT];     // largest opening of the valve in % for hydraulic balancing, targets are scaled to it, 100 = off
-} VDM_VALVES_CONTROL3_CONFIG;
+  uint8_t rangeFrom[ACTUATOR_COUNT];      // smallest opening in % when the valve is open, 0..99, default 0
+  uint8_t rangeTo[ACTUATOR_COUNT];        // opening in % for a target of 100 % (hydraulic balancing), 1..100, default 100
+  uint8_t rangeCanClose[ACTUATOR_COUNT];  // 1: a target of 0 % closes the valve, 0: the valve stays at rangeFrom, default 1
+} VDM_VALVES_RANGE_CONFIG;
 
 
 typedef struct {
@@ -281,8 +279,7 @@ typedef struct
   VDM_MSG_CONFIG messengerConfig;
   VDM_VALVES_CONTROL_INIT valvesControlInit;
   VDM_VALVES_CONTROL1_CONFIG valvesControl1Config;
-  VDM_VALVES_CONTROL2_CONFIG valvesControl2Config;
-  VDM_VALVES_CONTROL3_CONFIG valvesControl3Config;
+  VDM_VALVES_RANGE_CONFIG valvesRangeConfig;
 } CONFIG_FLASH;
 
 typedef struct {
@@ -336,8 +333,9 @@ typedef struct {
 #define nvsValves                   "valves"
 #define nvsValvesControl            "valvesCtrl"
 #define nvsValvesControl1           "valvesCtrl1"
-#define nvsValvesControl2           "valvesCtrl2"
-#define nvsValvesControl3           "valvesCtrl3"
+#define nvsValvesRangeFrom          "valvesCtrl2"   // held the minimum opening before, same meaning with "can close"
+#define nvsValvesRangeTo            "valvesCtrl3"   // held the maximum opening before, same meaning
+#define nvsValvesRangeCanClose      "valvesCtrl4"
 #define nvsValvesControlHeatControl "vCtrlHeat"
 #define nvsValvesControlParkPos     "vCtrlParkPos"
 #define nvsValvesControlInit        "vCtrlInit"

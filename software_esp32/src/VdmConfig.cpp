@@ -148,8 +148,9 @@ void CVdmConfig::clearConfig()
     configFlash.valvesControlConfig.valveControlConfig[i].endActiveZone=100;
     configFlash.valvesControlInit.valveControlInit[i].tTarget=20;
     configFlash.valvesControl1Config.valveControl1Config[i].deadband=0.0;
-    configFlash.valvesControl2Config.minOpening[i]=0;
-    configFlash.valvesControl3Config.maxOpening[i]=100;
+    configFlash.valvesRangeConfig.rangeFrom[i]=0;
+    configFlash.valvesRangeConfig.rangeTo[i]=100;
+    configFlash.valvesRangeConfig.rangeCanClose[i]=1;
   }
   configFlash.valvesControlConfig.heatControl=0;
   configFlash.valvesControlConfig.parkingPosition=10;
@@ -280,14 +281,24 @@ void CVdmConfig::readConfig()
     if (prefs.isKey(nvsValvesControlInit)) {
       prefs.getBytes(nvsValvesControlInit, (void *) configFlash.valvesControlInit.valveControlInit, sizeof(configFlash.valvesControlInit.valveControlInit));
     }
-    if (prefs.isKey(nvsValvesControl2)) {
-      prefs.getBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
+    if (prefs.isKey(nvsValvesRangeFrom)) {
+      prefs.getBytes(nvsValvesRangeFrom, (void *) configFlash.valvesRangeConfig.rangeFrom, sizeof(configFlash.valvesRangeConfig.rangeFrom));
     }
-    if (prefs.isKey(nvsValvesControl3)) {
-      prefs.getBytes(nvsValvesControl3, (void *) configFlash.valvesControl3Config.maxOpening, sizeof(configFlash.valvesControl3Config.maxOpening));
-      for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
-        if ((configFlash.valvesControl3Config.maxOpening[i]==0) || (configFlash.valvesControl3Config.maxOpening[i]>100)) configFlash.valvesControl3Config.maxOpening[i]=100;
+    if (prefs.isKey(nvsValvesRangeTo)) {
+      prefs.getBytes(nvsValvesRangeTo, (void *) configFlash.valvesRangeConfig.rangeTo, sizeof(configFlash.valvesRangeConfig.rangeTo));
+    }
+    if (prefs.isKey(nvsValvesRangeCanClose)) {
+      prefs.getBytes(nvsValvesRangeCanClose, (void *) configFlash.valvesRangeConfig.rangeCanClose, sizeof(configFlash.valvesRangeConfig.rangeCanClose));
+    }
+    // invalid ranges fall back to the defaults
+    for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+      uint8_t from=configFlash.valvesRangeConfig.rangeFrom[i];
+      uint8_t to=configFlash.valvesRangeConfig.rangeTo[i];
+      if ((from>99) || (to==0) || (to>100) || (from>=to)) {
+        configFlash.valvesRangeConfig.rangeFrom[i]=0;
+        configFlash.valvesRangeConfig.rangeTo[i]=100;
       }
+      if (configFlash.valvesRangeConfig.rangeCanClose[i]>1) configFlash.valvesRangeConfig.rangeCanClose[i]=1;
     }
     prefs.end();
   }
@@ -462,8 +473,9 @@ void CVdmConfig::writeValvesControlConfig(bool reboot, bool restartTask)
   prefs.putBytes(nvsValvesControl, (void *) configFlash.valvesControlConfig.valveControlConfig, sizeof(configFlash.valvesControlConfig.valveControlConfig));
   prefs.putBytes(nvsValvesControl1, (void *) configFlash.valvesControl1Config.valveControl1Config, sizeof(configFlash.valvesControl1Config.valveControl1Config));
   prefs.putBytes(nvsValvesControlInit, (void *) configFlash.valvesControlInit.valveControlInit, sizeof(configFlash.valvesControlInit.valveControlInit));
-  prefs.putBytes(nvsValvesControl2, (void *) configFlash.valvesControl2Config.minOpening, sizeof(configFlash.valvesControl2Config.minOpening));
-  prefs.putBytes(nvsValvesControl3, (void *) configFlash.valvesControl3Config.maxOpening, sizeof(configFlash.valvesControl3Config.maxOpening));
+  prefs.putBytes(nvsValvesRangeFrom, (void *) configFlash.valvesRangeConfig.rangeFrom, sizeof(configFlash.valvesRangeConfig.rangeFrom));
+  prefs.putBytes(nvsValvesRangeTo, (void *) configFlash.valvesRangeConfig.rangeTo, sizeof(configFlash.valvesRangeConfig.rangeTo));
+  prefs.putBytes(nvsValvesRangeCanClose, (void *) configFlash.valvesRangeConfig.rangeCanClose, sizeof(configFlash.valvesRangeConfig.rangeCanClose));
   prefs.putUChar (nvsValvesControlHeatControl,configFlash.valvesControlConfig.heatControl);
   prefs.putUChar (nvsValvesControlParkPos,configFlash.valvesControlConfig.parkingPosition);
   prefs.end();
@@ -669,13 +681,17 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           if (!doc["valves"][i]["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].endActiveZone=doc["valves"][i]["endAZ"];  
           if (!doc["valves"][i]["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[idx].tTarget=doc["valves"][i]["inittTarget"];  
           if (!doc["valves"][i]["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[idx].deadband=doc["valves"][i]["deadband"];
-          if (!doc["valves"][i]["minOpen"].isNull()) {
-            int minOpen=doc["valves"][i]["minOpen"];
-            if ((minOpen>=0) && (minOpen<=100)) configFlash.valvesControl2Config.minOpening[idx]=minOpen;
+          // valve range: a missing value keeps the stored one, an invalid pair is ignored
+          if (!doc["valves"][i]["rangeFrom"].isNull() || !doc["valves"][i]["rangeTo"].isNull()) {
+            int from=doc["valves"][i]["rangeFrom"].isNull() ? configFlash.valvesRangeConfig.rangeFrom[idx] : doc["valves"][i]["rangeFrom"].as<int>();
+            int to=doc["valves"][i]["rangeTo"].isNull() ? configFlash.valvesRangeConfig.rangeTo[idx] : doc["valves"][i]["rangeTo"].as<int>();
+            if ((from>=0) && (from<=99) && (to>=1) && (to<=100) && (from<to)) {
+              configFlash.valvesRangeConfig.rangeFrom[idx]=from;
+              configFlash.valvesRangeConfig.rangeTo[idx]=to;
+            }
           }
-          if (!doc["valves"][i]["maxOpen"].isNull()) {
-            int maxOpen=doc["valves"][i]["maxOpen"];
-            if ((maxOpen>=1) && (maxOpen<=100)) configFlash.valvesControl3Config.maxOpening[idx]=maxOpen;
+          if (!doc["valves"][i]["rangeClose"].isNull()) {
+            configFlash.valvesRangeConfig.rangeCanClose[idx]=(doc["valves"][i]["rangeClose"].as<int>()!=0) ? 1 : 0;
           }
         }
       }

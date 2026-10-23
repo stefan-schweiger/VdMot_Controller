@@ -112,7 +112,7 @@
 #cfgValvesControlTable td { padding-left: .2rem; padding-right: .2rem; }
 #cfgValvesControlTable tr:first-child td { white-space: normal; line-height: 1.6; }
 /* 18 columns have to fit, the inline widths of the script are 50-70 px */
-#cfgValvesControlTable input[type=number] { width: 46px !important; }
+#cfgValvesControlTable input[type=number] { width: 44px !important; }
 #cfgValvesControlTable input[id^=cfgVCTi] { width: 54px !important; }
 #activeSetValves { margin-left: .4rem; }
 .tabpframe { @apply mt-3 border-t border-slate-100 pt-3; }
