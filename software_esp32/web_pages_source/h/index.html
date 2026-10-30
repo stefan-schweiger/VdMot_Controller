@@ -74,6 +74,18 @@
 		</div>
 	</dialog>
 
+	<dialog id="rangeDialog">
+		<div class="dlg-h" id="rangeDlgTitle">Valve range</div>
+		<div class="dlg-b">
+			<div id="rangeDlgSvg"></div>
+			<dl class="kv mt-3" id="rangeDlgKv"></dl>
+			<p class="hint mt-3" id="rangeDlgHint"></p>
+		</div>
+		<div class="dlg-f">
+			<button id="close-rangeDialog" class="btn">Close</button>
+		</div>
+	</dialog>
+
 	<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 px-4">
 			<div class="flex items-center gap-2.5 py-3">
@@ -1191,6 +1203,129 @@ Publish on change on server side is not recommended with this option">
 			el.classList.remove("st-ok","st-warn","st-err");
 			if (state) el.classList.add(state);
 		}
+
+		// popup that shows how the target of a valve (0-100 %) becomes its opening
+		let lastValvesStatus = [];
+		let savedValveRanges = [];
+		let rangeDlgValve = 0;
+
+		// same as CStmApp::mapTarget of the ESP32
+		function mapValveTarget(target, range) {
+			let from = range.from, to = range.to;
+			if (target > 100) target = 100;
+			if ((to > 100) || (from >= to)) {
+				from = 0;
+				to = 100;
+			}
+			if (target == 0) return (range.close ? 0 : from);
+			return from + Math.floor(((to - from) * target + 50) / 100);
+		}
+
+		function readValveRange(valve) {
+			return {from: Number(id('cfgVCRangeFrom'+valve).value), to: Number(id('cfgVCRangeTo'+valve).value), close: id('cfgVCRangeClose'+valve).checked};
+		}
+
+		function makeRangeInfo(valve) {
+			let el = document.createElement('span');
+			el.className = 'tip';
+			el.setAttribute('tabindex', '0');
+			el.setAttribute('role', 'button');
+			el.title = 'How the target becomes the opening of the valve';
+			el.textContent = 'i';
+			el.onclick = function() { openRangeDialog(valve); };
+			el.onkeydown = function(e) {
+				if ((e.key == 'Enter') || (e.key == ' ')) {
+					e.preventDefault();
+					openRangeDialog(valve);
+				}
+			};
+			return el;
+		}
+
+		function openRangeDialog(valve) {
+			rangeDlgValve = valve;
+			renderRangeDialog();
+			id('rangeDialog').showModal();
+		}
+
+		// the edited range in the control settings is shown at once, before it is saved
+		document.addEventListener('input', function(e) {
+			if (id('rangeDialog').open && /^cfgVCRange(From|To|Close)/.test(e.target.id)) renderRangeDialog();
+		});
+
+		function renderRangeDialog() {
+			const valve = rangeDlgValve;
+			const range = readValveRange(valve);
+			const saved = savedValveRanges[valve];
+			const status = lastValvesStatus.find(v => v.idx == valve);
+			const off = (range.to > 100) || (range.from >= range.to);
+			const from = off ? 0 : range.from;
+			const to = off ? 100 : range.to;
+			const target = status ? Math.min(Number(status.targetPos), 100) : null;
+			const expected = (target === null) ? null : mapValveTarget(target, range);
+			const actual = status ? Number(status.pos) : null;
+			const link = Number(id('cfgVCLink-'+valve).value);
+
+			const name = status ? status.name : id('cfgValvesControlTable').rows[valve].cells[1].textContent;
+			id('rangeDlgTitle').textContent = 'Valve ' + valve + (name ? ': ' + name : '');
+			id('rangeDlgSvg').innerHTML = rangeSvg(from, to, range.close, target, expected, actual);
+
+			let rows = [];
+			if (target !== null) rows.push(['Target', target + ' %']);
+			rows.push(['Valve range', off ? 'off (0-100 %)' : from + '-' + to + ' %']);
+			rows.push(['Target 0 %', range.close ? 'closes the valve' : 'stays at ' + from + ' %']);
+			if (target !== null) {
+				let calc;
+				if (target == 0) calc = range.close ? 'closed' : from + ' %';
+				else calc = from + ' + ' + (to - from) + ' &times; ' + target + ' % = ' + expected + ' %';
+				rows.push(['Opening for this target', calc]);
+			}
+			if (actual !== null) rows.push(['Actual opening', actual + ' %']);
+			rows.push(['Target 1 / 50 / 100 %', [1, 50, 100].map(t => mapValveTarget(t, range)).join(' / ') + ' %']);
+			id('rangeDlgKv').innerHTML = rows.map(r => '<div><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>').join('');
+
+			let hint = 'The target comes from the controller (after the active zone), MQTT or the manual setting. The opening is the stroke of the valve: 0 % closed, 100 % fully open.';
+			if (link > 0) hint = 'Linked to valve ' + link + ': it gets the target of that valve, then its own range applies. ' + hint;
+			if ((actual !== null) && (Math.abs(actual - expected) > 2)) hint = 'The valve has not reached the new opening yet. ' + hint;
+			if (saved && ((saved.from != range.from) || (saved.to != range.to) || (saved.close != range.close)))
+				hint = 'Not saved yet, the valve still uses ' + saved.from + '-' + saved.to + ' %' + (saved.close ? ' (can close)' : '') + '. The drawing shows the new range. ' + hint;
+			id('rangeDlgHint').textContent = hint;
+		}
+
+		// target bar on top, valve opening below, the band between them shows where each target ends up
+		function rangeSvg(from, to, close, target, expected, actual) {
+			const X = p => 20 + p * 4;
+			const text = (x, y, s, anchor, color, weight) => '<text x="' + x + '" y="' + y + '" font-size="11" text-anchor="' + anchor + '" fill="' + color + '" font-weight="' + weight + '">' + s + '</text>';
+			const tick = (x, y, s) => text(x, y, s, 'middle', '#64748b', '400');
+			let s = '<svg viewBox="0 0 440 168" width="100%" role="img" aria-label="Target and valve opening">';
+			s += text(20, 12, 'Target (0-100 %)', 'start', '#334155', '600');
+			s += '<polygon points="' + X(0) + ',44 ' + X(100) + ',44 ' + X(to) + ',110 ' + X(from) + ',110" fill="#10b981" fill-opacity="0.12"/>';
+			if (close && from > 0) s += '<line x1="' + X(0) + '" y1="44" x2="' + X(0) + '" y2="110" stroke="#94a3b8" stroke-dasharray="3 3"/>';
+			s += '<rect x="20" y="34" width="400" height="10" rx="5" fill="#cbd5e1"/>';
+			s += tick(X(0), 58, '0') + tick(X(100) - 6, 58, '100');
+			s += '<rect x="20" y="110" width="400" height="10" rx="5" fill="#e2e8f0"/>';
+			s += '<rect x="' + X(from) + '" y="110" width="' + (X(to) - X(from)) + '" height="10" rx="3" fill="#6ee7b7"/>';
+			if (target !== null) {
+				s += '<line x1="' + X(target) + '" y1="44" x2="' + X(expected) + '" y2="110" stroke="#059669" stroke-width="2"/>';
+				s += '<circle cx="' + X(target) + '" cy="39" r="6" fill="#fff" stroke="#059669" stroke-width="2"/>';
+				s += text(Math.max(32, Math.min(408, X(target))), 26, target + ' %', 'middle', '#047857', '600');
+				s += '<circle cx="' + X(expected) + '" cy="115" r="6" fill="#fff" stroke="#059669" stroke-width="2"/>';
+			}
+			if (actual !== null) s += '<polygon points="' + X(actual) + ',108 ' + (X(actual) - 5) + ',99 ' + (X(actual) + 5) + ',99" fill="#0f172a"><title>actual opening ' + actual + ' %</title></polygon>';
+			// labels under the opening bar, the more important ones first, none closer than 7 %
+			let labels = [];
+			if (expected !== null) labels.push([expected, expected + ' %', '#047857', '600']);
+			labels.push([from, String(from), '#64748b', '400'], [to, String(to), '#64748b', '400'], [0, '0', '#64748b', '400'], [100, '100', '#64748b', '400']);
+			let shown = [];
+			labels.forEach(function(l) {
+				if (shown.some(p => Math.abs(p - l[0]) < 7)) return;
+				shown.push(l[0]);
+				s += text(Math.max(26, Math.min(410, X(l[0]))), 136, l[1], 'middle', l[2], l[3]);
+			});
+			s += text(20, 160, 'Valve opening (stroke)', 'start', '#334155', '600');
+			s += '</svg>';
+			return s;
+		}
 				
 				
 		function _isContains(json, keyname) {
@@ -1396,8 +1531,14 @@ Publish on change on server side is not recommended with this option">
 				}
 			}
 			for (row=1;row<valvesJson.length+1;row++) {
-				let thiscell = valvesTable.rows[row].cells[4];
-				let el = document.createElement('img');
+				let thiscell = valvesTable.rows[row].cells[2];
+				let el = document.createElement('span');
+				el.setAttribute('id', 'vPos' + row);
+				thiscell.appendChild(el);
+				thiscell.appendChild(makeRangeInfo(valvesJson[row-1].idx));
+
+				thiscell = valvesTable.rows[row].cells[4];
+				el = document.createElement('img');
 				el.setAttribute('name', 'windowImg' + row);
 				el.setAttribute('id', 'windowImg' + row);
 				el.className = "alignTabCellImgState";
@@ -1954,6 +2095,7 @@ Publish on change on server side is not recommended with this option">
 				el.setAttribute('value','100');
 				el.setAttribute('title','Opening of the valve (%) for a target of 100 %');
 				thiscell.appendChild(el);
+				thiscell.appendChild(makeRangeInfo(row));
 
 				thiscell = valvesControlTable.rows[row].cells[17];
 				el = document.createElement('input');
@@ -2255,6 +2397,9 @@ Publish on change on server side is not recommended with this option">
 			});
 			id("close-emailParameterDialog").addEventListener("click", () => {
     			id("emailParameterDialog").close();
+			});
+			id("close-rangeDialog").addEventListener("click", () => {
+    			id("rangeDialog").close();
 			});
 			id("cfgEmailPwd").addEventListener("change", () => {
     			emailPwdChanged=true;
@@ -2943,7 +3088,7 @@ Publish on change on server side is not recommended with this option">
 				}
 
 				valvesTable.rows[index+1].cells[1].textContent = item.name;	
-				valvesTable.rows[index+1].cells[2].textContent = item.pos;
+				id('vPos'+(index+1)).textContent = item.pos;
 				thisImg=id("windowImg"+(index+1));	
 				if ('window' in item) {
 					if (item.window===1) {	
@@ -3016,6 +3161,8 @@ Publish on change on server side is not recommended with this option">
 					id('setValveP'+(index+1)).value=item.targetPos;
 				}
 			});
+			lastValvesStatus = valvesJson;
+			if (id('rangeDialog').open) renderRangeDialog();
 			showWarningIcon();
 		}
 
@@ -3099,6 +3246,7 @@ Publish on change on server side is not recommended with this option">
 				id('cfgVCRangeFrom'+row).value= thisValve.rangeFrom ?? thisValve.minOpen ?? 0;
 				id('cfgVCRangeTo'+row).value= thisValve.rangeTo ?? thisValve.maxOpen ?? 100;
 				id('cfgVCRangeClose'+row).checked= (thisValve.rangeClose ?? 1) != 0;
+				savedValveRanges[row] = readValveRange(row);
 				setCfgVCLink(id('cfgVCLink-'+row));
 				if (cfgValvesControlJson.valves[row-1].active==1) anyValveControlEnabled=true;
 			}
