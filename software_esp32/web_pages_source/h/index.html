@@ -121,6 +121,8 @@
 					<dl class="kv">
 						<div><dt>Time</dt><dd id="locTime"></dd></div>
 						<div><dt>Up time</dt><dd id="upTime"></dd></div>
+						<div id="resetReasonRow" hidden><dt>Last restart</dt><dd id="resetReason"></dd></div>
+						<div id="panicInfoRow" hidden><dt>Crash</dt><dd id="panicInfo" class="font-mono text-xs"></dd></div>
 					</dl>
 					<div id="login-div" class="mt-4 flex gap-2" style="display:none">
 						<input type="button" class="btn" id="login-button" value="Login" title="Login"/>
@@ -3514,6 +3516,21 @@ Publish on change on server side is not recommended with this option">
 			}
 		}
 		
+		// reasons of the last restart of the ESP32 (esp_reset_reason)
+		const resetReasons = {
+			UNKNOWN: "unknown",
+			POWERON: "power on (power cut or power supply)",
+			EXT: "reset pin",
+			SW: "software restart (settings, update or reboot)",
+			PANIC: "crash (software exception)",
+			INT_WDT: "interrupt watchdog (the firmware hung)",
+			TASK_WDT: "task watchdog (the firmware hung)",
+			WDT: "watchdog",
+			DEEPSLEEP: "wake up from deep sleep",
+			BROWNOUT: "brownout (supply voltage too low)",
+			SDIO: "reset over SDIO"
+		};
+
 		async function getSystemDynInfo() {
 			const dataSystemDynInfo=await getJson("sysdyninfo");
 			if (dataSystemDynInfo) {
@@ -3521,6 +3538,14 @@ Publish on change on server side is not recommended with this option">
 				
 				id("calibDate").hidden = (dataSystemDynInfo["sntpActive"]==0);
 				id("upTime").textContent = dataSystemDynInfo["upTime"];
+				// older firmware does not send the reason of the last restart
+				id("resetReasonRow").hidden = !("resetReason" in dataSystemDynInfo);
+				const reason = dataSystemDynInfo["resetReason"];
+				id("resetReason").textContent = reason + ((reason in resetReasons) ? ": " + resetReasons[reason] : "");
+				// where it crashed, only after a crash
+				const panicInfo = dataSystemDynInfo["panicInfo"] ?? "";
+				id("panicInfoRow").hidden = (panicInfo == "");
+				id("panicInfo").textContent = panicInfo;
 				id("heap").textContent = dataSystemDynInfo["heap"];
 				id("min-heap").textContent = dataSystemDynInfo["minheap"];
 				id("rssi").textContent = dataSystemDynInfo["wifirssi"]+" dBm";

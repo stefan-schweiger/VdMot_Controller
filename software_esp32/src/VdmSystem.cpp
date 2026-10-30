@@ -166,6 +166,7 @@ String CVdmSystem::getUpTime() {
 
 void CVdmSystem::sendResetReason() {
   String ResetMsg = String(systemMsgReset)+String(":")+getLastResetReason();
+  if (panicInfo.length()>0) ResetMsg += " "+panicInfo;
   // UART_DBG.println("SystemMsgReason: "+ResetMsg);
   VdmSystem.setSystemState(systemStateInfo,ResetMsg);
   if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {

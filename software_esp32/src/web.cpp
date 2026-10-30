@@ -346,6 +346,8 @@ String CWeb::getSysDynInfo()
                   "\"sntpActive\":"+String(VdmNet.sntpActive)+"," +
                   "\"sntpReachable\":"+String(VdmNet.sntpReachable)+"," +
                   "\"upTime\":\""+VdmSystem.getUpTime()+"\"," +
+                  "\"resetReason\":\""+VdmSystem.getLastResetReason()+"\"," +
+                  "\"panicInfo\":\""+VdmSystem.panicInfo+"\"," +
                   "\"heap\":\""+ConvBinUnits(ESP.getFreeHeap(),1)+ "\"," +
                   "\"minheap\":\""+ConvBinUnits(ESP.getMinFreeHeap(),1)+ "\"," +
                   "\"wifirssi\":"+WiFi.RSSI()+ "," +

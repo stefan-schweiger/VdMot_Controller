@@ -50,6 +50,7 @@
 #include "Messenger.h"
 #include "VdmTask.h"
 #include "RtcRam.h"
+#include "PanicRecord.h"
 #include "stmApp.h"
 
 uint32_t * StackPtrAtStart;
@@ -86,6 +87,8 @@ void setup(void) {
   UART_DBG.println("readingCnt read "+String(readingCnt));
   Stm32.STM32ota_setup();
   esp_reset_reason_t rr=esp_reset_reason();
+  VdmSystem.panicInfo=takePanicRecord();
+  if (VdmSystem.panicInfo.length()>0) UART_DBG.println("Crash before this start: "+VdmSystem.panicInfo);
   // a restart for new network settings or an ESP32 update keeps the STM32 running, so the valves keep
   // their positions and learned strokes, the ESP32 takes over its targets (StmApp.app_setup)
   // every other start resets the STM32 as before (except power on, it starts with the ESP32): a crash

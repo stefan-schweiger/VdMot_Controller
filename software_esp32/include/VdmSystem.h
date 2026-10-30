@@ -101,6 +101,8 @@ public:
   time_t stmBuild;
   uint8_t systemState;
   String systemMessage;
+  // where the ESP32 crashed before this start, empty if the last restart was not a crash
+  String panicInfo;
   bool getFSInProgress;
   uint32_t stackSize;
 
