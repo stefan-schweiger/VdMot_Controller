@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include "PanicRecord.h"
+#include "RtcRam.h"
 #include "esp_attr.h"
 #include "esp_debug_helpers.h"
 #include "esp_private/panic_internal.h"
@@ -16,20 +17,9 @@
 #include "xtensa/xtensa_context.h"
 
 #define PANIC_RECORD_MAGIC  0x50414E43UL
-#define PANIC_BACKTRACE     8
 
-typedef struct {
-  uint32_t magic;
-  uint32_t exception;                   // panic_exception_t: fault, abort, watchdog, ...
-  uint32_t exccause;                    // Xtensa exception cause of a fault
-  uint32_t pc;                          // instruction that crashed
-  uint32_t excvaddr;                    // address it accessed
-  uint32_t backtrace[PANIC_BACKTRACE];  // as on the serial port, 0 = end
-  uint32_t check;
-} PANIC_RECORD;
-
-// not initialized at the start, after power on the content is random: only valid with magic and check
-static RTC_NOINIT_ATTR PANIC_RECORD panicRecord;
+// in RTC memory (RtcRam.h), not initialized at the start: after power on the content is random, only valid with magic and check
+#define panicRecord (rtcRam.panicRecord)
 
 static inline __attribute__((always_inline)) uint32_t panicCheck(const PANIC_RECORD *record)
 {
