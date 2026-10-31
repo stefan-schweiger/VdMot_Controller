@@ -126,8 +126,11 @@ typedef struct {
 
 
 
+// names of valves and sensors, they are part of the MQTT topics (10 characters until 1a222a0)
+#define NAME_LEN                    30
+
 typedef struct {
-  char  name[11];
+  char  name[NAME_LEN+1];
   bool active;
 } VDM_VALVE_CONFIG;
 
@@ -234,7 +237,7 @@ typedef struct {
 
 
 typedef struct {
-  char name[11];
+  char name[NAME_LEN+1];
   bool active;
   int offset;
   char ID[25];
@@ -245,7 +248,7 @@ typedef struct {
 } VDM_TEMPS_CONFIG;
 
 typedef struct {
-  char name[11];
+  char name[NAME_LEN+1];
   bool active;
   float offset;
   float factor;
@@ -262,6 +265,36 @@ typedef struct {
   VDM_VOLT_CONFIG voltConfig[VOLT_SENSORS_COUNT];
   VDM_VOLT_AV_CONFIG voltAVConfig[VOLT_SENSORS_COUNT];
 } VDM_VOLTS_CONFIG;
+
+// stored layout with names of 10 characters (until 1a222a0): taken over once at the start, and still written
+// with shortened names, so an older firmware finds its settings
+#define NAME_LEN_V1                 10
+
+typedef struct {
+  char name[NAME_LEN_V1+1];
+  bool active;
+} VDM_VALVE_CONFIG_V1;
+
+typedef struct {
+  char name[NAME_LEN_V1+1];
+  bool active;
+  int offset;
+  char ID[25];
+} VDM_TEMP_CONFIG_V1;
+
+typedef struct {
+  char name[NAME_LEN_V1+1];
+  bool active;
+  float offset;
+  float factor;
+  char unit[9];
+  char ID[25];
+} VDM_VOLT_CONFIG_V1;
+
+typedef struct {
+  VDM_VOLT_CONFIG_V1 voltConfig[VOLT_SENSORS_COUNT];
+  VDM_VOLT_AV_CONFIG voltAVConfig[VOLT_SENSORS_COUNT];
+} VDM_VOLTS_CONFIG_V1;
 
 typedef struct  {
   uint8_t pushOver : 1 ;
@@ -383,6 +416,7 @@ typedef struct {
 #define nvsValvesCfg                "valvesCfg"
 #define nvsValvesControlCfg         "valvesCtrlCfg"
 #define nvsValves                   "valves"
+#define nvsValves2                  "valves2"       // with names of NAME_LEN characters
 #define nvsValvesControl            "valvesCtrl"
 #define nvsValvesControl1           "valvesCtrl1"
 #define nvsValvesRangeFrom          "valvesCtrl2"   // held the minimum opening before, same meaning with "can close"
@@ -398,9 +432,11 @@ typedef struct {
 
 #define nvsTempsCfg                 "tempsCfg"
 #define nvsTemps                    "temps"
+#define nvsTemps2                   "temps2"
 
 #define nvsVoltsCfg                 "voltsCfg"
 #define nvsVolts                    "volts"
+#define nvsVolts2                   "volts2"
 
 #define nvsDayOfCalib               "dayOfCalib"
 #define nvsHourOfCalib              "hourOfCalib"

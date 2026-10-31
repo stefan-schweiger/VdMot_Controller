@@ -215,6 +215,19 @@ void CVdmConfig::clearConfig()
 
 }
 
+// a name of the old layout (maybe without terminating zero) and back, shortened
+static void nameFromV1(char *dst, size_t size, const char *src)
+{
+  memset(dst, 0, size);
+  strncpy(dst, src, std::min(size-1, (size_t) NAME_LEN_V1));
+}
+
+static void nameToV1(char *dst, const char *src)
+{
+  memset(dst, 0, NAME_LEN_V1+1);
+  strncpy(dst, src, NAME_LEN_V1);
+}
+
 void CVdmConfig::readConfig()
 {
   if (prefs.begin(nvsSystemCfg,false)) {
@@ -269,8 +282,17 @@ void CVdmConfig::readConfig()
   }
 
   if (prefs.begin(nvsValvesCfg,false)) {
-    if (prefs.isKey(nvsValves))
-      prefs.getBytes(nvsValves, (void *) configFlash.valvesConfig.valveConfig, sizeof(configFlash.valvesConfig.valveConfig));
+    // names had 10 characters until 1a222a0, without the new key the old layout is taken over
+    if (prefs.isKey(nvsValves2) && (prefs.getBytesLength(nvsValves2)==sizeof(configFlash.valvesConfig.valveConfig))) {
+      prefs.getBytes(nvsValves2, (void *) configFlash.valvesConfig.valveConfig, sizeof(configFlash.valvesConfig.valveConfig));
+    } else if (prefs.isKey(nvsValves) && (prefs.getBytesLength(nvsValves)==sizeof(VDM_VALVE_CONFIG_V1)*ACTUATOR_COUNT)) {
+      VDM_VALVE_CONFIG_V1 old[ACTUATOR_COUNT];
+      prefs.getBytes(nvsValves, (void *) old, sizeof(old));
+      for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+        nameFromV1(configFlash.valvesConfig.valveConfig[i].name, sizeof(configFlash.valvesConfig.valveConfig[i].name), old[i].name);
+        configFlash.valvesConfig.valveConfig[i].active=old[i].active;
+      }
+    }
     configFlash.valvesConfig.dayOfCalib=prefs.getUChar(nvsDayOfCalib,9);
     configFlash.valvesConfig.hourOfCalib=prefs.getUChar(nvsHourOfCalib); 
     prefs.end();
@@ -334,14 +356,45 @@ void CVdmConfig::readConfig()
 
 
   if (prefs.begin(nvsTempsCfg,false)) {
-    if (prefs.isKey(nvsTemps))
-      prefs.getBytes(nvsTemps,(void *) configFlash.tempsConfig.tempConfig, sizeof(configFlash.tempsConfig.tempConfig));
+    if (prefs.isKey(nvsTemps2) && (prefs.getBytesLength(nvsTemps2)==sizeof(configFlash.tempsConfig.tempConfig))) {
+      prefs.getBytes(nvsTemps2, (void *) configFlash.tempsConfig.tempConfig, sizeof(configFlash.tempsConfig.tempConfig));
+    } else if (prefs.isKey(nvsTemps) && (prefs.getBytesLength(nvsTemps)==sizeof(VDM_TEMP_CONFIG_V1)*TEMP_SENSORS_COUNT)) {
+      VDM_TEMP_CONFIG_V1 *old = (VDM_TEMP_CONFIG_V1 *) malloc(sizeof(VDM_TEMP_CONFIG_V1)*TEMP_SENSORS_COUNT);
+      if (old) {
+        prefs.getBytes(nvsTemps, (void *) old, sizeof(VDM_TEMP_CONFIG_V1)*TEMP_SENSORS_COUNT);
+        for (uint8_t i=0; i<TEMP_SENSORS_COUNT; i++) {
+          VDM_TEMP_CONFIG &t = configFlash.tempsConfig.tempConfig[i];
+          nameFromV1(t.name, sizeof(t.name), old[i].name);
+          t.active=old[i].active;
+          t.offset=old[i].offset;
+          memcpy(t.ID, old[i].ID, sizeof(t.ID));
+        }
+        free(old);
+      }
+    }
     prefs.end();
   }
 
    if (prefs.begin(nvsVoltsCfg,false)) {
-    if (prefs.isKey(nvsVolts))
-      prefs.getBytes(nvsVolts,(void *) &configFlash.voltsConfig, sizeof(configFlash.voltsConfig));
+    if (prefs.isKey(nvsVolts2) && (prefs.getBytesLength(nvsVolts2)==sizeof(configFlash.voltsConfig))) {
+      prefs.getBytes(nvsVolts2, (void *) &configFlash.voltsConfig, sizeof(configFlash.voltsConfig));
+    } else if (prefs.isKey(nvsVolts) && (prefs.getBytesLength(nvsVolts)==sizeof(VDM_VOLTS_CONFIG_V1))) {
+      VDM_VOLTS_CONFIG_V1 *old = (VDM_VOLTS_CONFIG_V1 *) malloc(sizeof(VDM_VOLTS_CONFIG_V1));
+      if (old) {
+        prefs.getBytes(nvsVolts, (void *) old, sizeof(VDM_VOLTS_CONFIG_V1));
+        for (uint8_t i=0; i<VOLT_SENSORS_COUNT; i++) {
+          VDM_VOLT_CONFIG &v = configFlash.voltsConfig.voltConfig[i];
+          nameFromV1(v.name, sizeof(v.name), old->voltConfig[i].name);
+          v.active=old->voltConfig[i].active;
+          v.offset=old->voltConfig[i].offset;
+          v.factor=old->voltConfig[i].factor;
+          memcpy(v.unit, old->voltConfig[i].unit, sizeof(v.unit));
+          memcpy(v.ID, old->voltConfig[i].ID, sizeof(v.ID));
+          configFlash.voltsConfig.voltAVConfig[i]=old->voltAVConfig[i];
+        }
+        free(old);
+      }
+    }
     prefs.end();
   }
 
@@ -443,19 +496,58 @@ void CVdmConfig::writeConfig(bool reboot)
  
   prefs.begin(nvsValvesCfg,false);
   prefs.clear();
-  prefs.putBytes(nvsValves, (void *) configFlash.valvesConfig.valveConfig, sizeof(configFlash.valvesConfig.valveConfig));
+  prefs.putBytes(nvsValves2, (void *) configFlash.valvesConfig.valveConfig, sizeof(configFlash.valvesConfig.valveConfig));
+  {
+    VDM_VALVE_CONFIG_V1 old[ACTUATOR_COUNT];
+    for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+      nameToV1(old[i].name, configFlash.valvesConfig.valveConfig[i].name);
+      old[i].active=configFlash.valvesConfig.valveConfig[i].active;
+    }
+    prefs.putBytes(nvsValves, (void *) old, sizeof(old));
+  }
   prefs.putUChar(nvsDayOfCalib,configFlash.valvesConfig.dayOfCalib);
   prefs.putUChar(nvsHourOfCalib,configFlash.valvesConfig.hourOfCalib);
   prefs.end();
 
   prefs.begin(nvsTempsCfg,false);
   prefs.clear();
-  prefs.putBytes(nvsTemps, (void *) configFlash.tempsConfig.tempConfig, sizeof(configFlash.tempsConfig.tempConfig));
+  prefs.putBytes(nvsTemps2, (void *) configFlash.tempsConfig.tempConfig, sizeof(configFlash.tempsConfig.tempConfig));
+  {
+    VDM_TEMP_CONFIG_V1 *old = (VDM_TEMP_CONFIG_V1 *) calloc(TEMP_SENSORS_COUNT, sizeof(VDM_TEMP_CONFIG_V1));
+    if (old) {
+      for (uint8_t i=0; i<TEMP_SENSORS_COUNT; i++) {
+        VDM_TEMP_CONFIG &t = configFlash.tempsConfig.tempConfig[i];
+        nameToV1(old[i].name, t.name);
+        old[i].active=t.active;
+        old[i].offset=t.offset;
+        memcpy(old[i].ID, t.ID, sizeof(old[i].ID));
+      }
+      prefs.putBytes(nvsTemps, (void *) old, sizeof(VDM_TEMP_CONFIG_V1)*TEMP_SENSORS_COUNT);
+      free(old);
+    }
+  }
   prefs.end();
 
   prefs.begin(nvsVoltsCfg,false);
   prefs.clear();
-  prefs.putBytes(nvsVolts, (void *) &configFlash.voltsConfig, sizeof(configFlash.voltsConfig));
+  prefs.putBytes(nvsVolts2, (void *) &configFlash.voltsConfig, sizeof(configFlash.voltsConfig));
+  {
+    VDM_VOLTS_CONFIG_V1 *old = (VDM_VOLTS_CONFIG_V1 *) calloc(1, sizeof(VDM_VOLTS_CONFIG_V1));
+    if (old) {
+      for (uint8_t i=0; i<VOLT_SENSORS_COUNT; i++) {
+        VDM_VOLT_CONFIG &v = configFlash.voltsConfig.voltConfig[i];
+        nameToV1(old->voltConfig[i].name, v.name);
+        old->voltConfig[i].active=v.active;
+        old->voltConfig[i].offset=v.offset;
+        old->voltConfig[i].factor=v.factor;
+        memcpy(old->voltConfig[i].unit, v.unit, sizeof(old->voltConfig[i].unit));
+        memcpy(old->voltConfig[i].ID, v.ID, sizeof(old->voltConfig[i].ID));
+        old->voltAVConfig[i]=configFlash.voltsConfig.voltAVConfig[i];
+      }
+      prefs.putBytes(nvsVolts, (void *) old, sizeof(VDM_VOLTS_CONFIG_V1));
+      free(old);
+    }
+  }
   prefs.end();
   
   prefs.begin(nvsTZCfg,false);

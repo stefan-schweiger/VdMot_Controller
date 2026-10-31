@@ -281,7 +281,7 @@ void CMqtt::reconnect()
 {
     topicsReceived=false;
     char topicstr[MAINTOPIC_LEN+80];
-    char nrstr[21];
+    char nrstr[NAME_LEN+1];
     char* mqttUser = NULL;
     char* mqttPwd = NULL;
     uint8_t len;
@@ -463,7 +463,7 @@ void CMqtt::callback(char* topic, byte* payload, unsigned int length)
     uint8_t val8;
     bool topicFound = false;
     char value[32] = {0};
-    char rbName[11] = {0};
+    char rbName[NAME_LEN+1] = {0};
 
     // local zero terminated copy of payload
     memcpy(value, payload, std::min<size_t>(sizeof(value) - 1, length));
@@ -644,8 +644,8 @@ void CMqtt::publishValue (char* topicstr, char* valstr, size_t size)
 }
 
 void CMqtt::publish_valves () {
-    char topicstr[MAINTOPIC_LEN+50];
-    char nrstr[21];
+    char topicstr[MAINTOPIC_LEN+80];
+    char nrstr[NAME_LEN+1];
     char valstr[50];
     int8_t tempIdx;
     uint8_t len;
@@ -827,8 +827,8 @@ void CMqtt::publish_valves () {
 
 void CMqtt::publish_temps()
 {
-    char topicstr[MAINTOPIC_LEN+50];
-    char nrstr[21];
+    char topicstr[MAINTOPIC_LEN+80];
+    char nrstr[NAME_LEN+1];
     int8_t tempIdx;
     uint8_t len;
     String s;
@@ -878,8 +878,8 @@ void CMqtt::publish_temps()
 
 void CMqtt::publish_volts()
 {
-    char topicstr[MAINTOPIC_LEN+50];
-    char nrstr[21];
+    char topicstr[MAINTOPIC_LEN+80];
+    char nrstr[NAME_LEN+1];
     int8_t voltIdx;
     uint8_t len;
     String s;
@@ -927,8 +927,8 @@ void CMqtt::publish_volts()
 
 void CMqtt::publish_common () 
 {
-    char topicstr[MAINTOPIC_LEN+50];
-    char nrstr[21];
+    char topicstr[MAINTOPIC_LEN+80];
+    char nrstr[NAME_LEN+1];
     char valstr[50];
     int8_t tempIdx;
     uint8_t len;
