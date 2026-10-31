@@ -191,13 +191,18 @@ void CPiControl::setWindowAction(uint8_t windowControl)
   windowState = windowControl;
   switch (windowControl) {
     case windowActionCloseRestore: {
-      windowControlState = windowCloseRestore;
+      // after an open window the temperature is ignored a while longer, until the air of the room is warm again;
+      // a repeated "close" neither starts nor extends that
+      if ((windowControlState==windowOpenLock) && (VdmConfig.configFlash.valvesWindowConfig.hold[valveIndex]>0)) {
+        windowControlState = windowHoldAfterClose;
+        windowHoldStart = millis();
+      } else if (windowControlState!=windowHoldAfterClose) windowControlState = windowCloseRestore;
       setValveAction(lastControlPosition);
       break;
     }
     case windowActionOpenLock: {
       windowControlState = windowOpenLock;
-      setValveAction(windowOpenTarget);
+      setValveAction(windowPosition());
       break;
     }
   }
@@ -207,6 +212,12 @@ void CPiControl::setWindowAction(uint8_t windowControl)
     setValveAction(lastControlPosition);
   }
  }
+}
+
+// position while the window is open: the window target or where the controller had the valve
+uint8_t CPiControl::windowPosition()
+{
+  return ((VdmConfig.configFlash.valvesWindowConfig.mode[valveIndex]==windowModeKeep) ? lastControlPosition : windowOpenTarget);
 }
 
 void CPiControl::setValveAction(uint8_t valvePosition) {
@@ -241,9 +252,19 @@ CHECKACTION CPiControl::checkAction(uint8_t idx)
   if (!VdmConfig.configFlash.valvesControlConfig.valveControlConfig[valveIndex].controlFlags.windowInstalled) {
     windowControlState = windowIdle;  
   }
+  // while the window is open and the configured time after closing the controller ignores the room temperature
   if (windowControlState == windowOpenLock) {
-    setPosition(windowOpenTarget);
+    setPosition(windowPosition());
     return(nothing);
+  }
+  if (windowControlState == windowHoldAfterClose) {
+    // counted from the last close (millis survives clock jumps and wraps), ends at once without heat control
+    bool heating = (VdmConfig.heatValues.heatControl==piControlOnHeating) || (VdmConfig.heatValues.heatControl==piControlOnCooling);
+    if (heating && (millis()-windowHoldStart < (uint32_t) VdmConfig.configFlash.valvesWindowConfig.hold[valveIndex]*60000UL)) {
+      setPosition(lastControlPosition);
+      return(nothing);
+    }
+    windowControlState = windowCloseRestore;
   }
   
   switch (VdmConfig.heatValues.heatControl)

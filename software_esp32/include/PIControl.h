@@ -61,7 +61,8 @@
 
 
 enum CHECKACTION {nothing,gotoMin,gotoPark,control};
-enum WINDOWSTATE {windowIdle,windowOpenLock,windowCloseRestore};
+// windowHoldAfterClose: the window is closed again, the temperature is still ignored for the configured time
+enum WINDOWSTATE {windowIdle,windowOpenLock,windowCloseRestore,windowHoldAfterClose};
 
 class CPiControl: public Executable
 {
@@ -72,6 +73,7 @@ public:
     dynOffset=0;
     scheme=0;
     windowOpenTarget=0;
+    windowHoldStart=0;
     windowControlState=windowIdle;
     windowState=0;
     controlActive=true;
@@ -109,6 +111,8 @@ public:
   uint8_t windowState;
   WINDOWSTATE windowControlState;
   uint8_t  windowOpenTarget;
+  uint32_t windowHoldStart;
+  uint8_t windowPosition();
   bool controlActive;
   bool failed;
   double esum;

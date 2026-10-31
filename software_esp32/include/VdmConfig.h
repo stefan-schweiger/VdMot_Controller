@@ -198,11 +198,24 @@ typedef struct {
 // direct with "can close": closes below from minus this, opens again at from
 #define RANGE_HYSTERESIS            5
 
+// what a valve does while its window is open and how long its controller ignores the room temperature after
+// the window closed (minutes), with the values for all zones; stored with its own nvs key
+typedef struct {
+  uint8_t mode[ACTUATOR_COUNT];           // windowModeClose (default) or windowModeKeep
+  uint8_t hold[ACTUATOR_COUNT];           // 0 = continue at once (default)
+  uint8_t defaultMode;
+  uint8_t defaultHold;
+} VDM_VALVES_WINDOW_CONFIG;
+
+// close: the valve goes to .../window/target (default 0 %); keep: it stays where it is
+#define windowModeClose             0
+#define windowModeKeep              1
+
 // controller settings a zone takes from the settings for all zones unless it sets them itself,
 // bit n of VDM_VALVES_CONTROL_SHARED.own is setting n, the names are the json keys (ctrlFieldNames)
 enum {
   ctrlFieldValueSource, ctrlFieldTargetSource, ctrlFieldInitTarget, ctrlFieldXp, ctrlFieldTi, ctrlFieldWindow, ctrlFieldAllow,
-  ctrlFieldTs, ctrlFieldDeadband, ctrlFieldOffset, ctrlFieldScheme, ctrlFieldKi,
+  ctrlFieldTs, ctrlFieldDeadband, ctrlFieldOffset, ctrlFieldScheme, ctrlFieldKi, ctrlFieldWindowMode, ctrlFieldWindowHold,
   CTRL_FIELD_COUNT
 };
 extern const char* const ctrlFieldNames[CTRL_FIELD_COUNT];
@@ -309,6 +322,7 @@ typedef struct
   VDM_VALVES_CONTROL1_CONFIG valvesControl1Config;
   VDM_VALVES_RANGE_CONFIG valvesRangeConfig;
   VDM_VALVES_CONTROL_SHARED valvesControlShared;
+  VDM_VALVES_WINDOW_CONFIG valvesWindowConfig;
 } CONFIG_FLASH;
 
 // settings as applied, a save applies only what has changed
@@ -377,6 +391,7 @@ typedef struct {
 #define nvsValvesControlDefaults    "valvesCtrl5"   // controller settings for all zones
 #define nvsValvesControlOwn         "valvesCtrl6"   // the controller settings each zone sets itself
 #define nvsValvesRangeMode          "valvesCtrl7"
+#define nvsValvesWindow             "valvesCtrl8"
 #define nvsValvesControlHeatControl "vCtrlHeat"
 #define nvsValvesControlParkPos     "vCtrlParkPos"
 #define nvsValvesControlInit        "vCtrlInit"

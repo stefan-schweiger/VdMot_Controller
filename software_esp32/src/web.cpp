@@ -211,6 +211,8 @@ String CWeb::getValvesControlConfig (VDM_VALVES_CONTROL_CONFIG valvesControlConf
               "\"rangeTo\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeTo[x]) + ","+
               "\"rangeClose\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x]) + ","+
               "\"rangeMode\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeMode[x]) + ","+
+              "\"windowMode\":"+String(VdmConfig.configFlash.valvesWindowConfig.mode[x]) + ","+
+              "\"windowHold\":"+String(VdmConfig.configFlash.valvesWindowConfig.hold[x]) + ","+
               "\"own\":\""+VdmConfig.ctrlOwnNames(VdmConfig.configFlash.valvesControlShared.own[x]) + "\"}";
 
     if (x<ACTUATOR_COUNT-1) result += ",";

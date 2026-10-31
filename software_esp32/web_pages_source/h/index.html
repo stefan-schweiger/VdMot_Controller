@@ -1956,6 +1956,10 @@ Publish on change on server side is not recommended with this option">
 				tip: 'Integral time: how fast a remaining deviation is corrected. With dynamic ki the integral part adds Kp x deviation per Ti. Smaller = faster, too small = overshoot. Default 3600 (1 h).'},
 			{key: 'window', label: 'Window contact', short: 'window', type: 'check',
 				tip: 'Window contact via MQTT: .../window/state open or close. While open the valve goes to .../window/target (default 0 %) and the control pauses, afterwards it continues.'},
+			{key: 'windowMode', label: 'Window open', short: 'window open', options: [['close the valve', 0], ['keep the valve', 1]], def: 0,
+				tip: 'What the valve does while the window is open, the controller ignores the room temperature in both cases. Close the valve: it goes to .../window/target (default 0 %, valves that can not close stay at their smallest opening). Keep the valve: it stays where it is, floor heating keeps its warmth.'},
+			{key: 'windowHold', label: 'Wait after closing', short: 'wait after closing', unit: 'min', min: 0, max: 255, def: 0,
+				tip: 'Minutes after the window closed in which the controller still ignores the room temperature, so the cold air after airing does not open the valve wide; meanwhile the valve stays where the controller had it. Counted from the last close, opening again starts over. The controller calculates every Ts, it continues with the first calculation after this time. 0 = at once.'},
 			{key: 'allow', more: true, label: 'Regulates in', short: 'regulates in', options: [['heating and cooling', 0], ['heating', 1], ['cooling', 2]],
 				tip: "In which Heat control mode the zone regulates. In the other mode the valve goes to the start of the active zone."},
 			{key: 'ts', more: true, label: 'Ts', unit: 's', min: 1,
@@ -2232,6 +2236,10 @@ Publish on change on server side is not recommended with this option">
 		}
 		function renderVcRows() {
 			anyValveControlEnabled = false;
+			let anyWindow = Number(vcDefaults.window) != 0;
+			for (let v=1; v<13; v++) if (vcValves[v] && vcOwnController(v) && (Number(vcValue(v, 'window')) != 0)) anyWindow = true;
+			id('vcDef-row-windowMode').hidden = !anyWindow;
+			id('vcDef-row-windowHold').hidden = !anyWindow;
 			let unused = 0;
 			for (let row=1; row<13; row++) {
 				if (!vcValves[row]) continue;
@@ -2309,6 +2317,7 @@ Publish on change on server side is not recommended with this option">
 				own.title = isOwn ? 'This zone sets the value itself. Click: back to the value for all zones (' + vcShown(f, vcDefaults[f.key]) + ')' : 'Follows the settings for all zones. Click: own value for this zone';
 				vcSet(id('vcDlg-'+f.key), vcValue(valve, f.key));
 				if (f.key=='ki') row.hidden = vcValue(valve, 'scheme')!=1;
+				if ((f.key=='windowMode') || (f.key=='windowHold')) row.hidden = Number(vcValue(valve, 'window'))==0;
 			});
 			renderVcDrawing();
 		}
@@ -3482,6 +3491,7 @@ Publish on change on server side is not recommended with this option">
 					vcOwn[row] = new Set(VC_FIELDS.map(f => f.key).filter(k => own.includes(k)));
 				}
 			} else vcDeriveDefaults();
+			VC_FIELDS.forEach(f => { if ((vcDefaults[f.key] === undefined) || (vcDefaults[f.key] === null)) vcDefaults[f.key] = f.def ?? 0; });
 			VC_FIELDS.forEach(f => vcSet(id('vcDef-'+f.key), vcDefaults[f.key]));
 			id('vcDef-row-ki').hidden = vcDefaults.scheme!=1;
 			vcFillModeOptions();
