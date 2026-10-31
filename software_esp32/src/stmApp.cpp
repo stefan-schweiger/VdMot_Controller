@@ -679,6 +679,8 @@ void  CStmApp::app_check_data()
                         // the STM32 has the mapped target already, the mirror keeps it from being sent again
                         target_position_mirror[idx] = target;
                         actuators[idx].target_position = logicalTarget(idx,target);
+                        // the valve keeps its state in the hysteresis band of a direct valve range
+                        rangeOpen[idx] = (target > 0);
                         targetRead = idx;
                     }
                 }
