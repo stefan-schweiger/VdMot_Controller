@@ -207,15 +207,25 @@ String CWeb::getValvesControlConfig (VDM_VALVES_CONTROL_CONFIG valvesControlConf
               "\"ts\":"+String(valvesControlConfig.valveControlConfig[x].ts) + ","+
               "\"ki\":"+String(valvesControlConfig.valveControlConfig[x].ki) + ","+
               "\"scheme\":"+String(valvesControlConfig.valveControlConfig[x].scheme) + ","+
-              "\"startAZ\":"+String(valvesControlConfig.valveControlConfig[x].startActiveZone) + ","+
-              "\"endAZ\":"+String(valvesControlConfig.valveControlConfig[x].endActiveZone) + ","+
               "\"rangeFrom\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeFrom[x]) + ","+
               "\"rangeTo\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeTo[x]) + ","+
-              "\"rangeClose\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x]) + "}";
+              "\"rangeClose\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x]) + ","+
+              "\"rangeMode\":"+String(VdmConfig.configFlash.valvesRangeConfig.rangeMode[x]) + ","+
+              "\"own\":\""+VdmConfig.ctrlOwnNames(VdmConfig.configFlash.valvesControlShared.own[x]) + "\"}";
 
     if (x<ACTUATOR_COUNT-1) result += ",";
   }  
-  result += "]}"; 
+  // the controller settings for all zones, with the keys of a valve
+  result += "],\"defaults\":{";
+  for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+    float value=VdmConfig.getCtrlField(-1, f);
+    result += "\""+String(ctrlFieldNames[f])+"\":";
+    if (f==ctrlFieldInitTarget) result += String(value,1);
+    else if ((f==ctrlFieldDeadband) || (f==ctrlFieldKi)) result += String(value);
+    else result += String(lround(value));
+    if (f<CTRL_FIELD_COUNT-1) result += ",";
+  }
+  result += "}}"; 
   return result;  
 }
 

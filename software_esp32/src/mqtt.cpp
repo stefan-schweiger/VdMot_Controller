@@ -583,16 +583,6 @@ void CMqtt::callback(char* topic, byte* payload, unsigned int length)
                                 if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].targetSource==0)
                                     PiControl[idx].dynOffset=atoi(value);
                             } 
-                        } else if (checkTopicName(pt,(char*) "/control/min")) {
-                            if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.active) {
-                                if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].targetSource==0)
-                                    PiControl[idx].startActiveZone=atoi(value);
-                            } 
-                        } else if (checkTopicName(pt,(char*) "/control/max")) {
-                            if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].controlFlags.active) {
-                                if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].targetSource==0)
-                                    PiControl[idx].endActiveZone=atoi(value);
-                            }
                         } 
                         else if (checkTopicName(pt,(char*) "/window/target")) {
                             if (VdmConfig.configFlash.valvesControlConfig.valveControlConfig[idx].link==0) {
@@ -747,20 +737,6 @@ void CMqtt::publish_valves () {
                     } else itoa(PiControl[x].controlActive, valstr, 10);
                     publishValue(topicstr, valstr, sizeof(topicstr));
                     lastValveValues[x].controlMode=PiControl[x].controlActive;
-                }
-                if ((lastValveValues[x].startActiveZone!=PiControl[x].startActiveZone) || forcePublish || lastValveValues[x].publishTimeOut) {
-                    topicstr[len] = '\0';
-                    strlcat(topicstr, "/control/min",sizeof(topicstr));
-                    itoa(PiControl[x].startActiveZone, valstr, 10);
-                    publishValue(topicstr, valstr, sizeof(topicstr));
-                    lastValveValues[x].startActiveZone=PiControl[x].startActiveZone;
-                }
-                if ((lastValveValues[x].endActiveZone!=PiControl[x].endActiveZone) || forcePublish || lastValveValues[x].publishTimeOut) {
-                    topicstr[len] = '\0';
-                    strlcat(topicstr, "/control/max",sizeof(topicstr));
-                    itoa(PiControl[x].endActiveZone, valstr, 10);
-                    publishValue(topicstr, valstr, sizeof(topicstr));
-                    lastValveValues[x].endActiveZone=PiControl[x].endActiveZone;
                 }
 
                 // calibration repetitions
@@ -1318,8 +1294,6 @@ static const HA_Item haValvesItems[] =  {
         {"sensor","valves_temp1","temp1","valves.temp1","temp1","","mdi:thermometer","","temperature","measurement","°C"},
         {"sensor","valves_temp2","temp2","valves.temp2","temp2","","mdi:thermometer","","temperature","measurement","°C"},
         {"number","valves_control_dynOffs","valves.control.dynOffs","valves.control.dynOffs","control/dynOffs","control/dynOffs","mdi:gauge","","volume","measurement",""},
-        {"number","valves_control_min","valves.control.min","valves.control.min","control/min","control/min","mdi:gauge","","volume","measurement",""},
-        {"number","valves_control_max","valves.control.max","valves.control.max","control/max","control/max","mdi:gauge","","volume","measurement",""},
         {"select","valves_window_state","window.state","valves.window.state","window/state","window/state","mdi:switch","\"options\": [\"close\",\"open\"]","","",""},
         {"number","valves_window_target","window.target","valves.window.target","window/target","window/target","mdi:gauge","","volume","measurement",""},
         {"text","valves_calibration_date","calibration.date","valves.calibration.date","calibration/date","calibration/date","mdi:timelapse","","volume","measurement",""},

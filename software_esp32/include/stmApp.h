@@ -175,6 +175,7 @@ public:
   void valvesCalibration(uint8_t index);
   void valvesAssembly(uint8_t index);
   void valvesDetect();
+  void controlLimits(uint8_t x, double &yMin, double &yMax);
   void scanValves();
   void scanTemps();
   void matchSensors();
@@ -218,7 +219,7 @@ private:
   int16_t getTOffset(uint8_t tIdx);
   bool checkNewTarget();
   uint8_t effectiveTarget(uint8_t x);
-  uint8_t mapTarget(uint8_t x, uint8_t target);
+  uint8_t mapTarget(uint8_t x, uint8_t target, bool open=true);
   uint8_t logicalTarget(uint8_t x, uint8_t stmTarget);
   bool readTargetsFromStm();
 
@@ -226,6 +227,7 @@ private:
 
   bool settarget_check;
   uint8_t target_position_mirror[ACTUATOR_COUNT];
+  bool rangeOpen[ACTUATOR_COUNT];         // last opening was above 0, for the hysteresis of a direct valve range
   // target sent to the STM32, the mirror is updated when the STM32 acknowledges it
   uint8_t pendingTargetValve;
   uint8_t pendingTargetValue;

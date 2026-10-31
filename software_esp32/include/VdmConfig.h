@@ -155,7 +155,7 @@ typedef struct {
   uint16_t ts;
   float ki;
   uint8_t scheme;
-  uint8_t startActiveZone;
+  uint8_t startActiveZone;                // not used any more (the valve range does it), kept for the stored layout
   uint8_t endActiveZone;
 } VDM_VALVE_CONTROL_CONFIG;
 
@@ -188,8 +188,36 @@ typedef struct {
 typedef struct {
   uint8_t rangeFrom[ACTUATOR_COUNT];      // smallest opening in % when the valve is open, 0..99, default 0
   uint8_t rangeTo[ACTUATOR_COUNT];        // opening in % for a target of 100 % (hydraulic balancing), 1..100, default 100
-  uint8_t rangeCanClose[ACTUATOR_COUNT];  // 1: a target of 0 % closes the valve, 0: the valve stays at rangeFrom, default 1
+  uint8_t rangeCanClose[ACTUATOR_COUNT];  // 1: the valve can close (scaled: at 0 %, direct: below from), 0: it stays at rangeFrom, default 1
+  uint8_t rangeMode[ACTUATOR_COUNT];      // rangeScaled (default) or rangeDirect
 } VDM_VALVES_RANGE_CONFIG;
+
+// scaled: the target 1..100 % is spread over from..to; direct: the target is the opening, cut at from and to
+#define rangeScaled                 0
+#define rangeDirect                 1
+// direct with "can close": closes below from minus this, opens again at from
+#define RANGE_HYSTERESIS            5
+
+// controller settings a zone takes from the settings for all zones unless it sets them itself,
+// bit n of VDM_VALVES_CONTROL_SHARED.own is setting n, the names are the json keys (ctrlFieldNames)
+enum {
+  ctrlFieldValueSource, ctrlFieldTargetSource, ctrlFieldInitTarget, ctrlFieldXp, ctrlFieldTi, ctrlFieldWindow, ctrlFieldAllow,
+  ctrlFieldTs, ctrlFieldDeadband, ctrlFieldOffset, ctrlFieldScheme, ctrlFieldKi,
+  CTRL_FIELD_COUNT
+};
+extern const char* const ctrlFieldNames[CTRL_FIELD_COUNT];
+
+typedef struct {
+  VDM_VALVE_CONTROL_CONFIG control;       // active and link are not used
+  float tTarget;
+  float deadband;
+} VDM_VALVE_CONTROL_DEFAULTS;
+
+// stored with their own nvs keys, so the layout of the other valve control blobs stays unchanged
+typedef struct {
+  VDM_VALVE_CONTROL_DEFAULTS defaults;    // the settings for all zones
+  uint16_t own[ACTUATOR_COUNT];           // the settings each zone sets itself
+} VDM_VALVES_CONTROL_SHARED;
 
 
 typedef struct {
@@ -280,6 +308,7 @@ typedef struct
   VDM_VALVES_CONTROL_INIT valvesControlInit;
   VDM_VALVES_CONTROL1_CONFIG valvesControl1Config;
   VDM_VALVES_RANGE_CONFIG valvesRangeConfig;
+  VDM_VALVES_CONTROL_SHARED valvesControlShared;
 } CONFIG_FLASH;
 
 // settings as applied, a save applies only what has changed
@@ -345,6 +374,9 @@ typedef struct {
 #define nvsValvesRangeFrom          "valvesCtrl2"   // held the minimum opening before, same meaning with "can close"
 #define nvsValvesRangeTo            "valvesCtrl3"   // held the maximum opening before, same meaning
 #define nvsValvesRangeCanClose      "valvesCtrl4"
+#define nvsValvesControlDefaults    "valvesCtrl5"   // controller settings for all zones
+#define nvsValvesControlOwn         "valvesCtrl6"   // the controller settings each zone sets itself
+#define nvsValvesRangeMode          "valvesCtrl7"
 #define nvsValvesControlHeatControl "vCtrlHeat"
 #define nvsValvesControlParkPos     "vCtrlParkPos"
 #define nvsValvesControlInit        "vCtrlInit"
@@ -413,6 +445,13 @@ public:
   uint32_t doc2IPAddress(String id);
   void checkToResetCfg();
   void writeMiscValues();
+  // controller settings for all zones, valve -1 = the settings for all zones
+  double getCtrlField(int8_t valve, uint8_t field);
+  void setCtrlField(int8_t valve, uint8_t field, double value);
+  void deriveCtrlDefaults();
+  void applyCtrlDefaults();
+  uint16_t parseCtrlOwn(const char* names);
+  String ctrlOwnNames(uint16_t own);
 
   Preferences prefs;
 

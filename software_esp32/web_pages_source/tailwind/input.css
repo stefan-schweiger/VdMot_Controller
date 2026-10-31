@@ -16,6 +16,13 @@
 	}
 	input:where([readonly]) { @apply bg-slate-50 text-slate-500; }
 	select:where([size]) { @apply p-1; }
+	/* own arrow with room around it instead of the one of the browser at the border */
+	select:where(:not([size]):not([multiple])) {
+		@apply appearance-none bg-no-repeat pr-7;
+		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 10 6'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M1 1l4 4 4-4'/%3e%3c/svg%3e");
+		background-position: right .5rem center;
+		background-size: .625rem .375rem;
+	}
 
 	input:where([type=button]), button {
 		@apply cursor-pointer rounded-md border border-slate-300 bg-white px-2 py-1 text-sm font-medium text-slate-700 shadow-sm
@@ -109,11 +116,40 @@
 .tabContent { display: none; max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem; }
 .tabLink.active { @apply border-emerald-600 text-emerald-700; }
 .hide { display: none; }
-#cfgValvesControlTable td { padding-left: .2rem; padding-right: .2rem; }
 #cfgValvesControlTable tr:first-child td { white-space: normal; line-height: 1.6; }
-/* 18 columns have to fit, the inline widths of the script are 50-70 px */
-#cfgValvesControlTable input[type=number] { width: 44px !important; }
-#cfgValvesControlTable input[id^=cfgVCTi] { width: 54px !important; }
+#cfgValvesControlTable input[type=number] { width: 3.25rem; }
+#cfgValvesControlTable td.vc-l { text-align: left; }
+#cfgValvesControlTable select { width: 11rem; }
+#cfgValvesControlTable select.vc-mode-sel { width: 6.5rem; }
+.vc-sum { @apply ml-2 text-xs text-slate-500; }
+.vc-sum.vc-warn { @apply font-semibold text-amber-700; }
+/* control settings for all zones and the values one zone sets itself */
+.vc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); column-gap: 2.5rem; }
+.vc-f { @apply flex items-center justify-between gap-3 py-1; }
+.vc-f label { @apply text-slate-600; }
+.vc-in { @apply flex shrink-0 items-center gap-1.5; }
+.vc-in input[type=number] { width: 5rem; }
+.vc-in select { width: 9rem; }
+.vc-unit { @apply w-4 text-xs text-slate-400; }
+#vcDlgFields .vc-f { @apply -mx-2 rounded-md px-2; }
+#vcDlgFields .vc-f.vc-own { background: #ecfdf5; box-shadow: inset 3px 0 0 #10b981; }
+#vcDlgFields .vc-f.vc-own label { @apply font-medium text-emerald-800; }
+#vcDialog { width: 54rem; }
+#vcDialog[open] { display: flex; flex-direction: column; max-height: calc(100vh - 2rem); }
+#vcDialog .dlg-b { overflow-y: auto; }
+#vcDialog .vc-grid { grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); }
+/* a sideways drag tries values, scrolling up and down still works */
+#vcDlgSvg { cursor: ew-resize; touch-action: pan-y; user-select: none; }
+#vcDlgSvg svg { max-width: 34rem; margin: 0 auto; }
+.vc-try { @apply mx-auto mt-2 flex max-w-[34rem] items-center gap-3; }
+.vc-try label { @apply shrink-0 text-slate-600; }
+.vc-try input[type=range] { flex: 1; min-width: 0; accent-color: #059669; }
+.vc-try-val { @apply w-16 shrink-0 text-xs tabular-nums text-slate-500; }
+.vc-try .btn-2 { @apply px-2 py-1 text-xs; }
+.vc-pill { @apply w-[4.75rem] shrink-0 rounded-full px-0 py-0.5 text-xs font-medium text-slate-500; }
+.vc-pill[aria-pressed=true] { @apply border-transparent bg-emerald-600 text-white hover:bg-emerald-700; }
+#vcDialog .vc-mode select { width: 15rem; }
+#vcDlgRangeFrom, #vcDlgRangeTo { width: 3.75rem; }
 #activeSetValves { margin-left: .4rem; }
 .tabpframe { @apply mt-3 border-t border-slate-100 pt-3; }
 .st-ok { @apply bg-emerald-100 font-semibold text-emerald-800; }
@@ -140,3 +176,6 @@
 	border: 2px solid currentColor; border-top-color: transparent; animation: vd-spin .7s linear infinite;
 }
 #spinner-Config.spinner::after { content: "Waiting for the STM32, valve and sensor settings are locked until it responds."; }
+
+/* the smaller padding of selects in tables keeps room for the arrow */
+.tbl select:where(:not([size]):not([multiple])) { padding-right: 1.5rem; background-position: right .375rem center; }

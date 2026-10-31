@@ -154,9 +154,11 @@ void CVdmConfig::clearConfig()
     configFlash.valvesRangeConfig.rangeFrom[i]=0;
     configFlash.valvesRangeConfig.rangeTo[i]=100;
     configFlash.valvesRangeConfig.rangeCanClose[i]=1;
+    configFlash.valvesRangeConfig.rangeMode[i]=rangeScaled;
   }
   configFlash.valvesControlConfig.heatControl=0;
   configFlash.valvesControlConfig.parkingPosition=10;
+  deriveCtrlDefaults();
  
   for (uint8_t i=0; i<TEMP_SENSORS_COUNT; i++) {
     configFlash.tempsConfig.tempConfig[i].active = false;
@@ -293,6 +295,9 @@ void CVdmConfig::readConfig()
     if (prefs.isKey(nvsValvesRangeCanClose)) {
       prefs.getBytes(nvsValvesRangeCanClose, (void *) configFlash.valvesRangeConfig.rangeCanClose, sizeof(configFlash.valvesRangeConfig.rangeCanClose));
     }
+    if (prefs.isKey(nvsValvesRangeMode)) {
+      prefs.getBytes(nvsValvesRangeMode, (void *) configFlash.valvesRangeConfig.rangeMode, sizeof(configFlash.valvesRangeConfig.rangeMode));
+    }
     // invalid ranges fall back to the defaults
     for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
       uint8_t from=configFlash.valvesRangeConfig.rangeFrom[i];
@@ -302,7 +307,16 @@ void CVdmConfig::readConfig()
         configFlash.valvesRangeConfig.rangeTo[i]=100;
       }
       if (configFlash.valvesRangeConfig.rangeCanClose[i]>1) configFlash.valvesRangeConfig.rangeCanClose[i]=1;
+      if (configFlash.valvesRangeConfig.rangeMode[i]>rangeDirect) configFlash.valvesRangeConfig.rangeMode[i]=rangeScaled;
     }
+    // controller settings for all zones, worked out from the zones when they were never saved
+    if (prefs.isKey(nvsValvesControlDefaults) && prefs.isKey(nvsValvesControlOwn) &&
+        (prefs.getBytesLength(nvsValvesControlDefaults)==sizeof(configFlash.valvesControlShared.defaults)) &&
+        (prefs.getBytesLength(nvsValvesControlOwn)==sizeof(configFlash.valvesControlShared.own))) {
+      prefs.getBytes(nvsValvesControlDefaults, (void *) &configFlash.valvesControlShared.defaults, sizeof(configFlash.valvesControlShared.defaults));
+      prefs.getBytes(nvsValvesControlOwn, (void *) configFlash.valvesControlShared.own, sizeof(configFlash.valvesControlShared.own));
+    } else deriveCtrlDefaults();
+    applyCtrlDefaults();
     prefs.end();
   }
  
@@ -533,6 +547,9 @@ void CVdmConfig::writeValvesControlConfig(bool reboot, bool restartTask)
   prefs.putBytes(nvsValvesRangeFrom, (void *) configFlash.valvesRangeConfig.rangeFrom, sizeof(configFlash.valvesRangeConfig.rangeFrom));
   prefs.putBytes(nvsValvesRangeTo, (void *) configFlash.valvesRangeConfig.rangeTo, sizeof(configFlash.valvesRangeConfig.rangeTo));
   prefs.putBytes(nvsValvesRangeCanClose, (void *) configFlash.valvesRangeConfig.rangeCanClose, sizeof(configFlash.valvesRangeConfig.rangeCanClose));
+  prefs.putBytes(nvsValvesRangeMode, (void *) configFlash.valvesRangeConfig.rangeMode, sizeof(configFlash.valvesRangeConfig.rangeMode));
+  prefs.putBytes(nvsValvesControlDefaults, (void *) &configFlash.valvesControlShared.defaults, sizeof(configFlash.valvesControlShared.defaults));
+  prefs.putBytes(nvsValvesControlOwn, (void *) configFlash.valvesControlShared.own, sizeof(configFlash.valvesControlShared.own));
   prefs.putUChar (nvsValvesControlHeatControl,configFlash.valvesControlConfig.heatControl);
   prefs.putUChar (nvsValvesControlParkPos,configFlash.valvesControlConfig.parkingPosition);
   prefs.end();
@@ -690,10 +707,160 @@ void CVdmConfig::postValvesCfg (JsonObject doc)
   }
 }
 
+const char* const ctrlFieldNames[CTRL_FIELD_COUNT] = {"vSource", "tSource", "inittTarget", "xp", "ti", "window", "allow",
+  "ts", "deadband", "offset", "scheme", "ki"};
+
+// two settings are the same when they differ less than the web page shows
+static bool sameCtrlValue(double a, double b)
+{
+  return (fabs(a-b)<0.0005);
+}
+
+// a controller setting of a valve or, with valve -1, of the settings for all zones
+double CVdmConfig::getCtrlField(int8_t valve, uint8_t field)
+{
+  VDM_VALVE_CONTROL_CONFIG &c = (valve<0) ? configFlash.valvesControlShared.defaults.control : configFlash.valvesControlConfig.valveControlConfig[valve];
+  switch (field) {
+    case ctrlFieldValueSource:  return (c.valueSource);
+    case ctrlFieldTargetSource: return (c.targetSource);
+    case ctrlFieldInitTarget:   return ((valve<0) ? configFlash.valvesControlShared.defaults.tTarget : configFlash.valvesControlInit.valveControlInit[valve].tTarget);
+    case ctrlFieldXp:           return (c.xp);
+    case ctrlFieldTi:           return (c.ti);
+    case ctrlFieldWindow:       return (c.controlFlags.windowInstalled);
+    case ctrlFieldAllow:        return (c.controlFlags.allow);
+    case ctrlFieldTs:           return (c.ts);
+    case ctrlFieldDeadband:     return ((valve<0) ? configFlash.valvesControlShared.defaults.deadband : configFlash.valvesControl1Config.valveControl1Config[valve].deadband);
+    case ctrlFieldOffset:       return (c.offset);
+    case ctrlFieldScheme:       return (c.scheme);
+    case ctrlFieldKi:           return (c.ki);
+  }
+  return (0);
+}
+
+void CVdmConfig::setCtrlField(int8_t valve, uint8_t field, double value)
+{
+  VDM_VALVE_CONTROL_CONFIG &c = (valve<0) ? configFlash.valvesControlShared.defaults.control : configFlash.valvesControlConfig.valveControlConfig[valve];
+  long n = lround(value);
+  switch (field) {
+    case ctrlFieldValueSource:  c.valueSource=n; break;
+    case ctrlFieldTargetSource: c.targetSource=n; break;
+    case ctrlFieldInitTarget:
+      if (valve<0) configFlash.valvesControlShared.defaults.tTarget=value;
+      else configFlash.valvesControlInit.valveControlInit[valve].tTarget=value;
+      break;
+    case ctrlFieldXp:           c.xp=n; break;
+    case ctrlFieldTi:           c.ti=n; break;
+    case ctrlFieldWindow:       c.controlFlags.windowInstalled=(n!=0) ? 1 : 0; break;
+    case ctrlFieldAllow:        c.controlFlags.allow=n; break;
+    case ctrlFieldTs:
+      // a new sample time needs a restart of the controller task, like a posted one
+      if ((valve>=0) && (c.ts!=(uint16_t) n)) VdmTask.restartPiTask=true;
+      c.ts=n;
+      break;
+    case ctrlFieldDeadband:
+      if (valve<0) configFlash.valvesControlShared.defaults.deadband=value;
+      else configFlash.valvesControl1Config.valveControl1Config[valve].deadband=value;
+      break;
+    case ctrlFieldOffset:       c.offset=n; break;
+    case ctrlFieldScheme:       c.scheme=n; break;
+    case ctrlFieldKi:           c.ki=value; break;
+  }
+}
+
+// settings that were never saved: the settings for all zones are the most common ones of the zones with
+// their own controller, a zone sets a value itself when it differs
+void CVdmConfig::deriveCtrlDefaults()
+{
+  uint8_t zones[ACTUATOR_COUNT];
+  uint8_t count=0;
+  for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+    VDM_VALVE_CONTROL_CONFIG &c = configFlash.valvesControlConfig.valveControlConfig[i];
+    if (c.controlFlags.active && (c.link==0)) zones[count++]=i;
+  }
+  if (count==0) zones[count++]=0;
+  for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+    uint8_t best=zones[0];
+    uint8_t bestCount=0;
+    for (uint8_t a=0; a<count; a++) {
+      uint8_t same=0;
+      for (uint8_t b=0; b<count; b++) {
+        if (sameCtrlValue(getCtrlField(zones[a], f), getCtrlField(zones[b], f))) same++;
+      }
+      if (same>bestCount) {
+        best=zones[a];
+        bestCount=same;
+      }
+    }
+    setCtrlField(-1, f, getCtrlField(best, f));
+  }
+  configFlash.valvesControlShared.defaults.control.controlFlags.active=0;
+  configFlash.valvesControlShared.defaults.control.link=0;
+  for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+    uint16_t own=0;
+    VDM_VALVE_CONTROL_CONFIG &c = configFlash.valvesControlConfig.valveControlConfig[i];
+    if (c.controlFlags.active && (c.link==0)) {
+      for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+        if (!sameCtrlValue(getCtrlField(i, f), getCtrlField(-1, f))) own |= (1<<f);
+      }
+      // ki is only used with static ki
+      if (c.scheme!=1) own &= ~(1<<ctrlFieldKi);
+    }
+    configFlash.valvesControlShared.own[i]=own;
+  }
+}
+
+// the settings a zone does not set itself are the settings for all zones
+void CVdmConfig::applyCtrlDefaults()
+{
+  for (uint8_t i=0; i<ACTUATOR_COUNT; i++) {
+    for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+      if (!(configFlash.valvesControlShared.own[i] & (1<<f))) setCtrlField(i, f, getCtrlField(-1, f));
+    }
+  }
+}
+
+// "xp,ti" to the bits of the settings
+uint16_t CVdmConfig::parseCtrlOwn(const char* names)
+{
+  uint16_t own=0;
+  if (names==nullptr) return (own);
+  String list=String(names)+",";
+  int start=0;
+  int comma;
+  while ((comma=list.indexOf(',', start))>=0) {
+    String name=list.substring(start, comma);
+    name.trim();
+    for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+      if (name==ctrlFieldNames[f]) own |= (1<<f);
+    }
+    start=comma+1;
+  }
+  return (own);
+}
+
+String CVdmConfig::ctrlOwnNames(uint16_t own)
+{
+  String result="";
+  for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+    if (own & (1<<f)) {
+      if (result.length()>0) result+=",";
+      result+=ctrlFieldNames[f];
+    }
+  }
+  return (result);
+}
+
 void CVdmConfig::postValvesControlCfg (JsonObject doc)
 {
   uint8_t idx=0;
   size_t size=doc["valves"].size();
+
+  // the settings for all zones first, the valves of the same post refer to them
+  if (doc["defaults"].is<JsonObject>()) {
+    for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+      if (!doc["defaults"][ctrlFieldNames[f]].isNull()) setCtrlField(-1, f, doc["defaults"][ctrlFieldNames[f]].as<double>());
+    }
+  }
 
   if (size==0) {
       for (uint8_t i =0;i<ACTUATOR_COUNT;i++) {
@@ -703,10 +870,12 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
         if (!doc["vSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].valueSource=doc["vSource"];
         if (!doc["tSource"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].targetSource=doc["tSource"];
         if (!doc["scheme"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].scheme=doc["scheme"];
-        if (!doc["startAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].startActiveZone=doc["startAZ"];
-        if (!doc["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[i].endActiveZone=doc["endAZ"];
         if (!doc["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[i].tTarget=doc["inittTarget"];
         if (!doc["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[i].deadband=doc["deadband"];
+      }
+      // a value for all valves is the setting for all zones too
+      for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+        if (!doc[ctrlFieldNames[f]].isNull()) setCtrlField(-1, f, doc[ctrlFieldNames[f]].as<double>());
       }
   } else {
     for (uint8_t i=0; i<size; i++) {
@@ -734,8 +903,6 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           }
           if (!doc["valves"][i]["ki"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].ki=doc["valves"][i]["ki"];  
           if (!doc["valves"][i]["scheme"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].scheme=doc["valves"][i]["scheme"];  
-          if (!doc["valves"][i]["startAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].startActiveZone=doc["valves"][i]["startAZ"];  
-          if (!doc["valves"][i]["endAZ"].isNull()) configFlash.valvesControlConfig.valveControlConfig[idx].endActiveZone=doc["valves"][i]["endAZ"];  
           if (!doc["valves"][i]["inittTarget"].isNull()) configFlash.valvesControlInit.valveControlInit[idx].tTarget=doc["valves"][i]["inittTarget"];  
           if (!doc["valves"][i]["deadband"].isNull()) configFlash.valvesControl1Config.valveControl1Config[idx].deadband=doc["valves"][i]["deadband"];
           // valve range: a missing value keeps the stored one, an invalid pair is ignored
@@ -750,10 +917,23 @@ void CVdmConfig::postValvesControlCfg (JsonObject doc)
           if (!doc["valves"][i]["rangeClose"].isNull()) {
             configFlash.valvesRangeConfig.rangeCanClose[idx]=(doc["valves"][i]["rangeClose"].as<int>()!=0) ? 1 : 0;
           }
+          if (!doc["valves"][i]["rangeMode"].isNull()) {
+            configFlash.valvesRangeConfig.rangeMode[idx]=(doc["valves"][i]["rangeMode"].as<int>()==rangeDirect) ? rangeDirect : rangeScaled;
+          }
+          // the settings the zone sets itself; clients without "own" set a value itself when it differs from the one for all zones
+          if (!doc["valves"][i]["own"].isNull()) {
+            configFlash.valvesControlShared.own[idx]=parseCtrlOwn(doc["valves"][i]["own"].as<const char*>());
+          } else {
+            for (uint8_t f=0; f<CTRL_FIELD_COUNT; f++) {
+              if (!doc["valves"][i][ctrlFieldNames[f]].isNull() && !sameCtrlValue(getCtrlField(idx, f), getCtrlField(-1, f)))
+                configFlash.valvesControlShared.own[idx] |= (1<<f);
+            }
+          }
         }
       }
     } 
   }
+  applyCtrlDefaults();
   if (!doc["common"]["heatControl"].isNull()) {
     configFlash.valvesControlConfig.heatControl=doc["common"]["heatControl"];
     heatValues.heatControl=configFlash.valvesControlConfig.heatControl;

@@ -73,6 +73,7 @@ CStmApp StmApp;
 
 CStmApp::CStmApp() 
 {
+    for (uint8_t x=0; x<ACTUATOR_COUNT; x++) rangeOpen[x]=true;
     settarget_check =false;
     pendingTargetValve=255;
     tempIndex=0;
@@ -215,26 +216,52 @@ int16_t CStmApp::getTOffset(uint8_t tIdx)
 }
 
 // target position that is sent to the STM32
-// every target (controller, linked valve, manual, MQTT, park position) is mapped to the valve range:
-// 1..100 % become from..to, so "to" limits the flow of the loop (hydraulic balancing) and "from" avoids
-// small openings with flow noise, 0 % closes the valve or, if it can not close, keeps it at "from"
-// (e.g. minimum flow for the boiler)
+// every target (controller, linked valve, manual, MQTT, park position) is mapped to the valve range, so "to"
+// limits the flow of the loop (hydraulic balancing) and "from" avoids small openings with flow noise:
+// scaled: 1..100 % become from..to, 0 % closes the valve or, if it can not close, keeps it at "from"
+// direct: the target is the opening, above "to" it stays at "to"; below "from" it closes or stays at "from"
 uint8_t CStmApp::effectiveTarget(uint8_t x)
 {
-    return (mapTarget(x, actuators[x].target_position));
+    uint8_t opening=mapTarget(x, actuators[x].target_position, rangeOpen[x]);
+    rangeOpen[x]=(opening>0);
+    return (opening);
 }
 
-uint8_t CStmApp::mapTarget(uint8_t x, uint8_t target)
+// open: the valve is open, only used by direct with "can close" between from - RANGE_HYSTERESIS and from
+uint8_t CStmApp::mapTarget(uint8_t x, uint8_t target, bool open)
 {
     if (target>100) target=100;      // the STM32 ignores targets above 100 % without answer
     int from = VdmConfig.configFlash.valvesRangeConfig.rangeFrom[x];
     int to = VdmConfig.configFlash.valvesRangeConfig.rangeTo[x];
+    bool canClose = VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x];
     if ((to>100) || (from>=to)) {
         from = 0;
         to = 100;
     }
-    if (target==0) return (VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x] ? 0 : (uint8_t) from);
+    if (target==0) return (canClose ? 0 : (uint8_t) from);
+    if (VdmConfig.configFlash.valvesRangeConfig.rangeMode[x]==rangeDirect) {
+        if (target>=from) return ((uint8_t) ((target<to) ? target : to));
+        if (!canClose) return ((uint8_t) from);
+        // closes below from - hysteresis and opens again at from, in between it keeps its state
+        if (target<from-RANGE_HYSTERESIS) return (0);
+        return (open ? (uint8_t) from : 0);
+    }
     return ((uint8_t) (from + ((to-from)*target+50)/100));
+}
+
+// output range of the controller of a valve in which the valve still changes: with a direct valve range
+// targets above "to" all give "to", below "from" only closing (just under from - hysteresis) changes something
+void CStmApp::controlLimits(uint8_t x, double &yMin, double &yMax)
+{
+    yMin = 0.0;
+    yMax = 100.0;
+    if (VdmConfig.configFlash.valvesRangeConfig.rangeMode[x]!=rangeDirect) return;
+    int from = VdmConfig.configFlash.valvesRangeConfig.rangeFrom[x];
+    int to = VdmConfig.configFlash.valvesRangeConfig.rangeTo[x];
+    if ((to>100) || (from>=to)) return;
+    yMax = to;
+    if (!VdmConfig.configFlash.valvesRangeConfig.rangeCanClose[x]) yMin = from;
+    else if (from>RANGE_HYSTERESIS) yMin = from-RANGE_HYSTERESIS-1;
 }
 
 // target of the ESP32 for a target of the STM32: the smallest target that is mapped closest to it

@@ -161,14 +161,17 @@ float CPiControl::piCtrl(float target,float value) {
     syslog.log(LOG_DEBUG, "pic: calc valve position : #"+String(valveIndex+1)+" ("+String(VdmConfig.configFlash.valvesConfig.valveConfig[valveIndex].name)+") tTarget = "+String(target)+" tValue = "+String(value)+" diff = "+String(e)+" iProp = "+String(iProp)+" kp = "+String(kp)+" esum = "+String(esum)+" p = "+String(p)+" y = "+String(y));
   }
 
-  if (y > 100.0) {
-    y = 100.0;
-    iProp = 100.0 - p;
+  // the output stops (and the integral part with it) where the valve does not change any more
+  double yMin, yMax;
+  StmApp.controlLimits(valveIndex, yMin, yMax);
+  if (y > yMax) {
+    y = yMax;
+    iProp = yMax - p;
     if (esum>old_esum) esum=old_esum;
   }
-  if (y < 0.0) {
-    y = 0.0;
-    iProp = 0.0 - p;
+  if (y < yMin) {
+    y = yMin;
+    iProp = yMin - p;
     if (esum<old_esum) esum=old_esum;
   }
 
@@ -285,7 +288,8 @@ void CPiControl::controlValve()
     case nothing:
       break;
     case gotoMin:
-      setPosition(startActiveZone);
+      // the valve range decides what 0 % means for the valve: closed or its smallest opening
+      setPosition(0);
       break;
     case gotoPark:
       setPosition(VdmConfig.heatValues.parkPosition);
@@ -339,9 +343,7 @@ void CPiControl::doControlValve()
       if (abs(target-value)<VdmConfig.configFlash.valvesControl1Config.valveControl1Config[valveIndex].deadband) return;
     }
     float newValveValue=calcValve();
-    if (endActiveZone>startActiveZone) {
-      valvePosition=round((((float)(endActiveZone-startActiveZone))*newValveValue/100.0)+startActiveZone); 
-    } else valvePosition=round(newValveValue);
+    valvePosition=round(newValveValue);
     if (valvePosition>100) {
       if (VdmConfig.configFlash.netConfig.syslogLevel>=VISMODE_DETAIL) {
         syslog.log(LOG_DEBUG, "pic:valve position exceeds 100 : (#"+String(valveIndex+1)+") = "+String(valvePosition));
